@@ -4,7 +4,7 @@ import React from "react";
 import { useDispatch } from "react-redux";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { toggleModal } from "../../redux/actions/modalActions";
-import { selectProduct } from "../../redux/actions/productActions";
+// import { selectProduct } from "../../redux/actions/productActions";
 
 import "./ProductGrid.css";
 
@@ -13,7 +13,7 @@ const ProductCard = ({ item, onItemClick }) => {
 
   const handleDeleteClick = (e) => {
     e.stopPropagation(); // Prevent triggering the card click
-    dispatch(selectProduct(item));
+    // dispatch(selectProduct(item));
     dispatch(toggleModal("deleteConfirmationModal"));
   };
 

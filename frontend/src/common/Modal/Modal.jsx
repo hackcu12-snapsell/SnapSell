@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { toggleModal } from "../../redux/actions/modalActions";
 
-const Modal = ({ modal_id, title, children, buttons, style }) => {
+const Modal = ({ modal_id, title, children, footerButtons, style }) => {
   const dispatch = useDispatch();
   const isOpen = useSelector((state) => state.modalState[modal_id]);
 
@@ -54,7 +54,7 @@ const Modal = ({ modal_id, title, children, buttons, style }) => {
           flexShrink: 0,
         }}
       >
-        {(buttons ?? []).map(({ text, onClick, variant }, index) => (
+        {(footerButtons ?? []).map(({ text, onClick, variant }, index) => (
           <Button
             key={index}
             variant={variant}

@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { toggleModal } from "../../redux/actions/modalActions";
 import "./Navbar.css";
 
 const Navbar = ({ isLoggedIn, onLogout }) => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [userName, setUserName] = useState("");
 
@@ -45,17 +48,22 @@ const Navbar = ({ isLoggedIn, onLogout }) => {
     navigate("/signup");
   };
 
+  const handleAbout = () => {
+    dispatch(toggleModal("globalModal"));
+  };
+
   return (
     <nav className="navbar">
       <div className="navbar-logo">
-        <Link to="/pantry">PantryPal</Link>
+        <Link to="/">SnapSell</Link>
       </div>
       <div className="navbar-links">
+        <button className="nav-link" onClick={handleAbout}>
+          About
+        </button>
         {isLoggedIn ? (
           <>
-            <Link to="/pantry">Pantry</Link>
-            <Link to="/recipes">Recipes</Link>
-            <Link to="/calendar">Calendar</Link>
+            <Link to="/snap">Snap</Link>
             {userName && (
               <span className="user-greeting">Hello, {userName}</span>
             )}

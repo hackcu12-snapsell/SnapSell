@@ -1,180 +1,108 @@
-import { useRef, useState } from 'react'
-import './App.css'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 
-type ItemInfo = {
-  name: string
-  description: string
-  condition: string
-  category: string
-  brand: string | null
-  year: string | null
-  is_shoe: boolean
-  is_collectible: boolean
-}
+import { Navbar, SnackbarProvider } from "./common";
+import ModalProvider from "./ModalProvider";
+import LandingPage from "./pages/LandingPage";
+import SignIn from "./pages/Auth/SignIn";
+import SignUp from "./pages/Auth/SignUp";
+import SnapPage from "./pages/SnapPage";
+import "./App.css";
+import { addLoginAuthentication, logout } from "./redux/actions/userActions";
 
-type Stage = 'upload' | 'loading' | 'confirm' | 'done'
-
-const CONDITIONS = ['New', 'Like New', 'Good', 'Fair', 'Poor']
+const ProtectedRoute = ({ isLoggedIn, children }: any) => {
+  if (!isLoggedIn) {
+    return <Navigate to="/signin" replace />;
+  }
+  return children;
+};
 
 export default function App() {
-  const [stage, setStage] = useState<Stage>('upload')
-  const [preview, setPreview] = useState<string | null>(null)
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [info, setInfo] = useState<ItemInfo | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const dispatch = useDispatch<any>();
+  const loginResult = useSelector((state: any) => state.userState.loginResult);
+  const [isLoggedIn, setIsLoggedIn] = useState(Boolean(loginResult));
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  function handleFile(file: File) {
-    setImageFile(file)
-    setPreview(URL.createObjectURL(file))
-    setError(null)
-  }
+  useEffect(() => {
+    // If state changes, keep local login boolean in sync
+    setIsLoggedIn(Boolean(loginResult));
+  }, [loginResult]);
 
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    const file = e.dataTransfer.files[0]
-    if (file?.type.startsWith('image/')) handleFile(file)
-  }
-
-  async function analyze() {
-    if (!imageFile) return
-    setStage('loading')
-    setError(null)
-
-    const body = new FormData()
-    body.append('image', imageFile)
-
-    try {
-      const res = await fetch('/api/analyze-item', { method: 'POST', body })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Unknown error')
-      setInfo(data)
-      setStage('confirm')
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
-      setStage('upload')
+  useEffect(() => {
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        dispatch(addLoginAuthentication(parsed));
+        setIsLoggedIn(true);
+      } catch (error) {
+        console.error("Error parsing user from localStorage", error);
+        localStorage.removeItem("user");
+      }
     }
+  }, [dispatch]);
+
+  const handleLogout = () => {
+    setIsLoggingOut(true);
+    dispatch(logout());
+    localStorage.removeItem("user");
+
+    setTimeout(() => {
+      window.location.href = "/signin";
+      setIsLoggedIn(false);
+    }, 50);
+  };
+
+  if (isLoggingOut) {
+    return (
+      <div className="logging-out-container">
+        <div className="logging-out-message">Logging out…</div>
+      </div>
+    );
   }
 
-  function handleChange(field: keyof ItemInfo, value: string) {
-    setInfo(prev => prev ? { ...prev, [field]: value || null } : prev)
-  }
+  const MainLayout = ({ children }: any) => {
+    const location = useLocation();
+    const isLandingPage = location.pathname === "/";
 
-  function confirm() {
-    console.log('Confirmed item:', info)
-    setStage('done')
-  }
-
-  function reset() {
-    setStage('upload')
-    setPreview(null)
-    setImageFile(null)
-    setInfo(null)
-    setError(null)
-  }
+    return (
+      <div>
+        {!isLandingPage && <Navbar isLoggedIn={isLoggedIn} onLogout={handleLogout} />}
+        {children}
+      </div>
+    );
+  };
 
   return (
-    <div className="app">
-      <h1>SnapSell</h1>
-      <p className="subtitle">Photograph an item to get an instant appraisal</p>
-
-      {stage === 'upload' && (
-        <div className="upload-section">
-          <div
-            className="dropzone"
-            onClick={() => inputRef.current?.click()}
-            onDrop={handleDrop}
-            onDragOver={e => e.preventDefault()}
-          >
-            {preview
-              ? <img src={preview} alt="preview" className="preview-img" />
-              : <span>Drop a photo here or <u>browse</u></span>
-            }
-          </div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
-          />
-          {error && <p className="error">{error}</p>}
-          {imageFile && (
-            <button className="btn-primary" onClick={analyze}>
-              Analyze Item
-            </button>
-          )}
+    <Router>
+      <ModalProvider />
+      <SnackbarProvider />
+      <MainLayout>
+        <div className="app-container">
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route
+              path="/snap"
+              element={
+                <ProtectedRoute isLoggedIn={isLoggedIn}>
+                  <SnapPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </div>
-      )}
-
-      {stage === 'loading' && (
-        <div className="loading-section">
-          {preview && <img src={preview} alt="preview" className="preview-img" />}
-          <div className="spinner" />
-          <p>Analyzing with Gemini...</p>
-        </div>
-      )}
-
-      {stage === 'confirm' && info && (
-        <div className="confirm-section">
-          {preview && <img src={preview} alt="preview" className="preview-img small" />}
-          <h2>Confirm Item Details</h2>
-          <p className="hint">Review and edit the AI's findings before continuing.</p>
-
-          <div className="form">
-            <label>Name
-              <input value={info.name} onChange={e => handleChange('name', e.target.value)} />
-            </label>
-
-            <label>Description
-              <textarea
-                rows={3}
-                value={info.description}
-                onChange={e => handleChange('description', e.target.value)}
-              />
-            </label>
-
-            <label>Condition
-              <select value={info.condition} onChange={e => handleChange('condition', e.target.value)}>
-                {CONDITIONS.map(c => <option key={c}>{c}</option>)}
-              </select>
-            </label>
-
-            <label>Category
-              <input value={info.category} onChange={e => handleChange('category', e.target.value)} />
-            </label>
-
-            <label>Brand
-              <input
-                value={info.brand ?? ''}
-                placeholder="Unknown"
-                onChange={e => handleChange('brand', e.target.value)}
-              />
-            </label>
-
-            <label>Year / Era
-              <input
-                value={info.year ?? ''}
-                placeholder="Unknown"
-                onChange={e => handleChange('year', e.target.value)}
-              />
-            </label>
-          </div>
-
-          <div className="actions">
-            <button className="btn-secondary" onClick={reset}>Start Over</button>
-            <button className="btn-primary" onClick={confirm}>Confirm & Continue</button>
-          </div>
-        </div>
-      )}
-
-      {stage === 'done' && info && (
-        <div className="done-section">
-          <h2>✓ Item Saved</h2>
-          <pre>{JSON.stringify(info, null, 2)}</pre>
-          <button className="btn-primary" onClick={reset}>Analyze Another</button>
-        </div>
-      )}
-    </div>
-  )
+      </MainLayout>
+    </Router>
+  );
 }

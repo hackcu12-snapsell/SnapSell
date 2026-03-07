@@ -15,7 +15,7 @@ const snackbarState = (state = defaultState, action) => {
     case ADD_SNACKBAR:
       return { ...state, ...payload, open: true };
     case REMOVE_SNACKBAR:
-      return { defaultState };
+      return defaultState;
     default:
       return state;
   }
