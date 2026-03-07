@@ -5,7 +5,7 @@ export const ADD_USER_PREFERENCES = "ADD_USER_PREFERENCES";
 
 export const defaultState = {
   loginResult: false,
-  userPreferences: {},
+  userPreferences: {}
 };
 
 const userState = (state = defaultState, action) => {

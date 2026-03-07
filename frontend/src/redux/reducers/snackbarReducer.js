@@ -6,7 +6,7 @@ export const REMOVE_SNACKBAR = "REMOVE_SNACKBAR";
 export const defaultState = {
   open: false,
   message: "",
-  severity: "info",
+  severity: "info"
 };
 
 const snackbarState = (state = defaultState, action) => {

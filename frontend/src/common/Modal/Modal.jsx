@@ -1,18 +1,11 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Divider,
-  Button,
-} from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Divider, Button } from "@mui/material";
 import { toggleModal } from "../../redux/actions/modalActions";
 
 const Modal = ({ modal_id, title, children, footerButtons, style }) => {
   const dispatch = useDispatch();
-  const isOpen = useSelector((state) => state.modalState[modal_id]);
+  const isOpen = useSelector(state => state.modalState[modal_id]);
 
   const handleClose = () => {
     dispatch(toggleModal(modal_id));
@@ -31,8 +24,8 @@ const Modal = ({ modal_id, title, children, footerButtons, style }) => {
           maxWidth: style?.maxWidth || "600px",
           display: "flex",
           flexDirection: "column",
-          maxHeight: "80vh",
-        },
+          maxHeight: "80vh"
+        }
       }}
     >
       <DialogTitle sx={{ paddingBottom: 0 }}>
@@ -42,7 +35,7 @@ const Modal = ({ modal_id, title, children, footerButtons, style }) => {
       <DialogContent
         sx={{
           flex: "1 1 auto",
-          overflowY: "auto",
+          overflowY: "auto"
         }}
       >
         {children}
@@ -51,7 +44,7 @@ const Modal = ({ modal_id, title, children, footerButtons, style }) => {
       <DialogActions
         sx={{
           justifyContent: "flex-end",
-          flexShrink: 0,
+          flexShrink: 0
         }}
       >
         {(footerButtons ?? []).map(({ text, onClick, variant }, index) => (
@@ -66,17 +59,17 @@ const Modal = ({ modal_id, title, children, footerButtons, style }) => {
                 border: "none",
                 color: "white",
                 "&:hover": {
-                  backgroundColor: "darkred",
-                },
+                  backgroundColor: "darkred"
+                }
               }),
               ...(text === "Save" && {
                 backgroundColor: "#3498db",
                 border: "none",
                 color: "white",
                 "&:hover": {
-                  backgroundColor: "#2980b9",
-                },
-              }),
+                  backgroundColor: "#2980b9"
+                }
+              })
             }}
           >
             {text}

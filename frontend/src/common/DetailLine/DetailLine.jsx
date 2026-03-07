@@ -9,9 +9,7 @@ const DetailLine = ({ title, isCollapsed, onToggleCollapse }) => {
   return (
     <div className="detail-line">
       <div className="title-container" onClick={onToggleCollapse}>
-        <KeyboardArrowDownIcon
-          className={`chevron-icon ${isCollapsed ? "rotated" : ""}`}
-        />
+        <KeyboardArrowDownIcon className={`chevron-icon ${isCollapsed ? "rotated" : ""}`} />
         <span>{title}</span>
       </div>
       <div className="line" />

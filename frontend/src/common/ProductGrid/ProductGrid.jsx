@@ -11,7 +11,7 @@ import "./ProductGrid.css";
 const ProductCard = ({ item, onItemClick }) => {
   const dispatch = useDispatch();
 
-  const handleDeleteClick = (e) => {
+  const handleDeleteClick = e => {
     e.stopPropagation(); // Prevent triggering the card click
     // dispatch(selectProduct(item));
     dispatch(toggleModal("deleteConfirmationModal"));
@@ -33,7 +33,7 @@ const ProductCard = ({ item, onItemClick }) => {
 const ProductGrid = ({ data, onItemClick }) => {
   return (
     <div className="product-grid">
-      {data.map((item) => (
+      {data.map(item => (
         <ProductCard key={item.id} item={item} onItemClick={onItemClick} />
       ))}
     </div>

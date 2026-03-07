@@ -1,9 +1,6 @@
 /** @module userActions.js */
 
-import {
-  ADD_LOGIN_AUTHENTICATION,
-  ADD_USER_PREFERENCES,
-} from "../reducers/userReducer";
+import { ADD_LOGIN_AUTHENTICATION, ADD_USER_PREFERENCES } from "../reducers/userReducer";
 import { API_URL } from "../../data/constants";
 import { basicAPI } from "../../utils/utilsThisApp";
 import { addSnackbar } from "./snackbarActions";
@@ -13,9 +10,9 @@ import { addSnackbar } from "./snackbarActions";
  * @description sets (replaces) userState.loginResults in store
  * @param {Object} results
  */
-export const addLoginAuthentication = (results) => ({
+export const addLoginAuthentication = results => ({
   type: ADD_LOGIN_AUTHENTICATION,
-  payload: results,
+  payload: results
 });
 
 /**
@@ -23,9 +20,9 @@ export const addLoginAuthentication = (results) => ({
  * @description sets (replaces) userState.userPreferences in store
  * @param {Object} results
  */
-export const addUserPreferences = (results) => ({
+export const addUserPreferences = results => ({
   type: ADD_USER_PREFERENCES,
-  payload: results,
+  payload: results
 });
 
 /**
@@ -33,17 +30,17 @@ export const addUserPreferences = (results) => ({
  * @description Makes API call to login a user
  * @param {Object} loginData
  */
-export const login = (loginData) => (dispatch) => {
+export const login = loginData => dispatch => {
   const url = `${API_URL}/login`;
 
   return basicAPI(url, "login", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "application/json"
     },
-    body: JSON.stringify(loginData),
+    body: JSON.stringify(loginData)
   })
-    .then((response) => {
+    .then(response => {
       console.log("Login response:", response);
       if (response.success) {
         const userData = {
@@ -51,36 +48,36 @@ export const login = (loginData) => (dispatch) => {
           token: response.token,
           username: response.username,
           userFirstName: response.userFirstName,
-          userLastName: response.userLastName,
+          userLastName: response.userLastName
         };
         localStorage.setItem("user", JSON.stringify(userData));
         console.log("Setting user data in store:", {
           ...userData,
-          token: userData.token ? "Token exists" : "No token",
+          token: userData.token ? "Token exists" : "No token"
         });
         dispatch(addLoginAuthentication(userData));
         dispatch(
           addSnackbar({
             message: "Login successful",
-            severity: "success",
-          }),
+            severity: "success"
+          })
         );
       } else {
         dispatch(
           addSnackbar({
             message: response.error || "Login failed",
-            severity: "error",
-          }),
+            severity: "error"
+          })
         );
       }
       return response;
     })
-    .catch((error) => {
+    .catch(error => {
       dispatch(
         addSnackbar({
           message: error.message || "Login failed",
-          severity: "error",
-        }),
+          severity: "error"
+        })
       );
       throw error;
     });
@@ -91,47 +88,47 @@ export const login = (loginData) => (dispatch) => {
  * @description Makes API call to register a new user
  * @param {Object} signupData
  */
-export const signup = (signupData) => (dispatch) => {
+export const signup = signupData => dispatch => {
   const url = `${API_URL}/signup`;
 
   return basicAPI(url, "signup", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "application/json"
     },
-    body: JSON.stringify(signupData),
+    body: JSON.stringify(signupData)
   })
-    .then((response) => {
+    .then(response => {
       if (response.success) {
         const userData = {
           userID: response.userID,
           token: response.token,
-          username: response.username,
+          username: response.username
         };
         localStorage.setItem("user", JSON.stringify(userData));
         dispatch(addLoginAuthentication(userData));
         dispatch(
           addSnackbar({
             message: "Signup successful",
-            severity: "success",
-          }),
+            severity: "success"
+          })
         );
       } else {
         dispatch(
           addSnackbar({
             message: response.error || "Signup failed",
-            severity: "error",
-          }),
+            severity: "error"
+          })
         );
       }
       return response;
     })
-    .catch((error) => {
+    .catch(error => {
       dispatch(
         addSnackbar({
           message: error.message || "Signup failed",
-          severity: "error",
-        }),
+          severity: "error"
+        })
       );
       throw error;
     });
@@ -141,12 +138,12 @@ export const signup = (signupData) => (dispatch) => {
  * @function logout
  * @description Logs out the user by clearing the authentication state
  */
-export const logout = () => (dispatch) => {
+export const logout = () => dispatch => {
   dispatch(addLoginAuthentication(null));
   dispatch(
     addSnackbar({
       message: "Logged out successfully",
-      severity: "success",
-    }),
+      severity: "success"
+    })
   );
 };

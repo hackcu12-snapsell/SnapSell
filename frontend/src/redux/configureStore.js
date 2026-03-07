@@ -13,9 +13,9 @@ const store = configureStore({
   reducer: {
     userState,
     snackbarState,
-    modalState,
+    modalState
   },
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(logger),
+  middleware: getDefaultMiddleware => getDefaultMiddleware().concat(logger)
 });
 
 export default store;

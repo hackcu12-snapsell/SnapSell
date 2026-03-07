@@ -9,7 +9,7 @@ import { toggleModal } from "./redux/actions/modalActions";
 const ModalProvider = () => {
   const dispatch = useDispatch();
 
-  const handleClose = (modal_id) => {
+  const handleClose = modal_id => {
     dispatch(toggleModal(modal_id));
   };
 
@@ -22,8 +22,8 @@ const ModalProvider = () => {
           {
             text: "Cancel",
             variant: "contained",
-            onClick: () => handleClose("globalModal"),
-          },
+            onClick: () => handleClose("globalModal")
+          }
         ]}
       >
         <p>This is the Add Item modal content.</p>

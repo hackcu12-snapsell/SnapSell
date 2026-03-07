@@ -12,7 +12,7 @@
  * // => "color: black; font-weight: bold; font-size: 0.9rem;"
  * @returns {String} color and font configuration for console.log
  */
-export const consoleColor = (color) => {
+export const consoleColor = color => {
   return `color: ${color}; font-weight: bold; font-size: 0.9rem;`;
 };
 
@@ -30,7 +30,7 @@ export const consoleColor = (color) => {
  * const funcProps = { action: "getFacilities", method: "GET", url: "www.example.com" };
  * logApiCall(funcProps);
  */
-export const logApiCall = (funcProps) => {
+export const logApiCall = funcProps => {
   const { action, method, url, tableObj, otherLogs } = funcProps;
   let color;
   switch (method) {
@@ -57,10 +57,8 @@ export const logApiCall = (funcProps) => {
   }
   /* eslint-disable no-console */
   console.groupCollapsed(
-    `%cAPI CALL > ${action} ${method ? `[${method}]` : ""}${
-      url ? `: ${url}` : ""
-    }`,
-    consoleColor(color),
+    `%cAPI CALL > ${action} ${method ? `[${method}]` : ""}${url ? `: ${url}` : ""}`,
+    consoleColor(color)
   );
   if (url) {
     console.trace(`%cURL: ${url}`, "font-weight: bold");
@@ -70,7 +68,7 @@ export const logApiCall = (funcProps) => {
     console.info(JSON.stringify(tableObj));
   }
   if (otherLogs && otherLogs.length > 0) {
-    otherLogs.forEach((log) => console.info(log));
+    otherLogs.forEach(log => console.info(log));
   }
 
   console.groupEnd();
@@ -93,7 +91,7 @@ export const basicAPI = (url, description, fetchOptions = {}) => {
     action: description,
     method: fetchOptions.method || "GET",
     url,
-    tableObj: fetchOptions.body || null,
+    tableObj: fetchOptions.body || null
   });
   const useLocalApi = false;
   const thisUrl = useLocalApi ? url.replace("3000", "8443") : url;
@@ -109,37 +107,37 @@ export const basicAPI = (url, description, fetchOptions = {}) => {
   // Create a new fetchOptions object with the merged headers
   const updatedFetchOptions = {
     ...fetchOptions,
-    headers,
+    headers
   };
 
   console.log("API Request:", {
     url: thisUrl,
     method: updatedFetchOptions.method,
-    headers: updatedFetchOptions.headers,
+    headers: updatedFetchOptions.headers
   });
 
   return fetch(thisUrl, updatedFetchOptions)
     .then(
-      (response) => {
+      response => {
         console.log("API Response Status:", response.status);
         if (response.ok) {
           return response;
         }
         throw response;
       },
-      (error) => {
+      error => {
         console.error("API Request Error:", error);
         throw error;
-      },
+      }
     )
-    .then((response) => {
+    .then(response => {
       const contentType = response.headers?.get("Content-Type");
       if (contentType?.includes("application/json")) {
         return response.json();
       }
       return response;
     })
-    .catch((e) => {
+    .catch(e => {
       if (!e || /JSON/.test(e.message)) {
         throw new Error("Received an invalid response from the server");
       }

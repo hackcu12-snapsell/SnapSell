@@ -7,10 +7,10 @@ import { ADD_SNACKBAR, REMOVE_SNACKBAR } from "../reducers/snackbarReducer";
  * @description functional display for snackbar
  * @param {Object} snackbarObj
  */
-export const addSnackbar = (snackbarObj) => {
+export const addSnackbar = snackbarObj => {
   return {
     type: ADD_SNACKBAR,
-    payload: snackbarObj,
+    payload: snackbarObj
   };
 };
 
@@ -19,9 +19,9 @@ export const addSnackbar = (snackbarObj) => {
  * @description close and clear snackbarState
  * @param {Object} snackbarObj
  */
-export const removeSnackbar = (snackbarObj) => {
+export const removeSnackbar = snackbarObj => {
   return {
     type: REMOVE_SNACKBAR,
-    payload: snackbarObj,
+    payload: snackbarObj
   };
 };

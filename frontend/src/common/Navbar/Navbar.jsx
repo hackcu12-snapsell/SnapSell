@@ -35,7 +35,7 @@ const Navbar = ({ isLoggedIn, onLogout }) => {
     }
   };
 
-  const handleHomeClick = (e) => {
+  const handleHomeClick = e => {
     e.preventDefault();
     navigate("/", { state: { fromLogin: true } });
   };
@@ -64,9 +64,7 @@ const Navbar = ({ isLoggedIn, onLogout }) => {
         {isLoggedIn ? (
           <>
             <Link to="/snap">Snap</Link>
-            {userName && (
-              <span className="user-greeting">Hello, {userName}</span>
-            )}
+            {userName && <span className="user-greeting">Hello, {userName}</span>}
             <button className="logout-button" onClick={handleLogout}>
               Logout
             </button>

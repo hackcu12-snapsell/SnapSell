@@ -71,7 +71,9 @@ h1 {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Images */
@@ -117,7 +119,9 @@ label {
   text-align: left;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   background: #1a1a1a;
   border: 1px solid #444;
   border-radius: 6px;
@@ -128,7 +132,9 @@ input, textarea, select {
   font-family: inherit;
 }
 
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
   outline: none;
   border-color: #646cff;
 }
@@ -182,7 +188,9 @@ pre {
   padding: 0.65rem 1.25rem;
   font-size: 1rem;
   cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
 }
 
 .btn-secondary:hover {

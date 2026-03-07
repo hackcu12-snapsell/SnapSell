@@ -20,7 +20,7 @@ export default function SignIn() {
     try {
       const response: any = await dispatch(
         // @ts-expect-error In a real app, this would call the backend API. For this demo, it just simulates success.
-        login({ email, password }),
+        login({ email, password })
       );
 
       // If the API returns success, it will have already updated state.
@@ -36,16 +36,16 @@ export default function SignIn() {
       dispatch(
         addSnackbar({
           message: "Logged in (local demo mode)",
-          severity: "success",
-        }),
+          severity: "success"
+        })
       );
       navigate("/snap");
     } catch (error: any) {
       dispatch(
         addSnackbar({
           message: error?.message ?? "Failed to sign in",
-          severity: "error",
-        }),
+          severity: "error"
+        })
       );
     } finally {
       setLoading(false);
@@ -62,7 +62,7 @@ export default function SignIn() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               required
               autoComplete="email"
             />
@@ -72,7 +72,7 @@ export default function SignIn() {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               required
               autoComplete="current-password"
             />

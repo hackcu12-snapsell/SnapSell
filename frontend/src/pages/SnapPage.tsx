@@ -57,7 +57,7 @@ export default function SnapPage() {
   }
 
   function handleChange(field: keyof ItemInfo, value: string) {
-    setInfo((prev) => (prev ? { ...prev, [field]: value || null } : prev));
+    setInfo(prev => (prev ? { ...prev, [field]: value || null } : prev));
   }
 
   function confirm() {
@@ -84,7 +84,7 @@ export default function SnapPage() {
             className="dropzone"
             onClick={() => inputRef.current?.click()}
             onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={e => e.preventDefault()}
           >
             {preview ? (
               <img src={preview} alt="preview" className="preview-img" />
@@ -99,7 +99,7 @@ export default function SnapPage() {
             type="file"
             accept="image/*"
             style={{ display: "none" }}
-            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+            onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
           />
           {error && <p className="error">{error}</p>}
           {imageFile && (
@@ -120,19 +120,14 @@ export default function SnapPage() {
 
       {stage === "confirm" && info && (
         <div className="confirm-section">
-          {preview && (
-            <img src={preview} alt="preview" className="preview-img small" />
-          )}
+          {preview && <img src={preview} alt="preview" className="preview-img small" />}
           <h2>Confirm Item Details</h2>
           <p className="hint">Review and edit the AI's findings before continuing.</p>
 
           <div className="form">
             <label>
               Name
-              <input
-                value={info.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-              />
+              <input value={info.name} onChange={e => handleChange("name", e.target.value)} />
             </label>
 
             <label>
@@ -140,7 +135,7 @@ export default function SnapPage() {
               <textarea
                 rows={3}
                 value={info.description}
-                onChange={(e) => handleChange("description", e.target.value)}
+                onChange={e => handleChange("description", e.target.value)}
               />
             </label>
 
@@ -148,9 +143,9 @@ export default function SnapPage() {
               Condition
               <select
                 value={info.condition}
-                onChange={(e) => handleChange("condition", e.target.value)}
+                onChange={e => handleChange("condition", e.target.value)}
               >
-                {CONDITIONS.map((c) => (
+                {CONDITIONS.map(c => (
                   <option key={c}>{c}</option>
                 ))}
               </select>
@@ -160,7 +155,7 @@ export default function SnapPage() {
               Category
               <input
                 value={info.category}
-                onChange={(e) => handleChange("category", e.target.value)}
+                onChange={e => handleChange("category", e.target.value)}
               />
             </label>
 
@@ -169,7 +164,7 @@ export default function SnapPage() {
               <input
                 value={info.brand ?? ""}
                 placeholder="Unknown"
-                onChange={(e) => handleChange("brand", e.target.value)}
+                onChange={e => handleChange("brand", e.target.value)}
               />
             </label>
 
@@ -178,7 +173,7 @@ export default function SnapPage() {
               <input
                 value={info.year ?? ""}
                 placeholder="Unknown"
-                onChange={(e) => handleChange("year", e.target.value)}
+                onChange={e => handleChange("year", e.target.value)}
               />
             </label>
           </div>

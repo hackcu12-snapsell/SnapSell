@@ -2,21 +2,21 @@ import React from "react";
 import { Button as MuiButton } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 
-const Button = (props) => {
+const Button = props => {
   const { children, hasShadow = false, onClick, variant = "contained" } = props;
   const [isPressed, setIsPressed] = React.useState(false);
 
   // Animation variants
   const buttonVariants = {
-    initial: { 
+    initial: {
       scale: 1,
       boxShadow: hasShadow ? "0px 2px 4px rgba(0, 0, 0, 0.1)" : "none"
     },
-    hover: { 
+    hover: {
       scale: 1.03,
       boxShadow: hasShadow ? "0px 4px 8px rgba(0, 0, 0, 0.15)" : "none"
     },
-    tap: { 
+    tap: {
       scale: 0.97,
       boxShadow: "none"
     }
@@ -31,16 +31,16 @@ const Button = (props) => {
 
   // Ripple effect animation
   const rippleVariants = {
-    initial: { 
+    initial: {
       opacity: 0.8,
-      scale: 0,
+      scale: 0
     },
-    animate: { 
+    animate: {
       opacity: 0,
       scale: 5,
-      transition: { 
+      transition: {
         duration: 0.8,
-        ease: "easeOut" 
+        ease: "easeOut"
       }
     }
   };
@@ -52,7 +52,7 @@ const Button = (props) => {
     textTransform: "none",
     whiteSpace: "nowrap",
     position: "relative",
-    overflow: "hidden",
+    overflow: "hidden"
   };
 
   const containedStyles = {
@@ -61,8 +61,8 @@ const Button = (props) => {
     backgroundColor: "var(--coffee-dark)",
     color: "var(--text-light)",
     "&:hover": {
-      backgroundColor: "var(--coffee-medium)",
-    },
+      backgroundColor: "var(--coffee-medium)"
+    }
   };
 
   const outlinedStyles = {
@@ -71,8 +71,8 @@ const Button = (props) => {
     backgroundColor: "transparent",
     color: "var(--text-light)",
     "&:hover": {
-      backgroundColor: "rgba(230, 210, 181, 0.1)",
-    },
+      backgroundColor: "rgba(230, 210, 181, 0.1)"
+    }
   };
 
   // Special styles for "Scan Item" and "Manual Add" buttons
@@ -82,12 +82,12 @@ const Button = (props) => {
     backgroundColor: "var(--coffee-medium)",
     color: "var(--text-light)",
     "&:hover": {
-      backgroundColor: "var(--coffee-dark)",
-    },
+      backgroundColor: "var(--coffee-dark)"
+    }
   };
 
   let buttonStyles = outlinedStyles;
-  
+
   if (variant === "contained") {
     buttonStyles = containedStyles;
   } else if (variant === "accent") {
@@ -97,7 +97,7 @@ const Button = (props) => {
   // Create a motion component from MUI Button
   const MotionButton = motion(MuiButton);
 
-  const handleClick = (e) => {
+  const handleClick = e => {
     setIsPressed(true);
     setTimeout(() => setIsPressed(false), 800);
     if (onClick) onClick(e);
@@ -122,7 +122,7 @@ const Button = (props) => {
       >
         {children}
       </motion.span>
-      
+
       <AnimatePresence>
         {isPressed && (
           <motion.span
@@ -135,7 +135,7 @@ const Button = (props) => {
               height: "20px",
               borderRadius: "50%",
               backgroundColor: "rgba(255, 255, 255, 0.3)",
-              zIndex: 0,
+              zIndex: 0
             }}
             variants={rippleVariants}
             initial="initial"

@@ -20,7 +20,7 @@ export default function SignUp() {
     try {
       const response: any = await dispatch(
         // @ts-expect-error some character descr
-        signup({ email, password }),
+        signup({ email, password })
       );
 
       if (response?.success) {
@@ -35,16 +35,16 @@ export default function SignUp() {
       dispatch(
         addSnackbar({
           message: "Signed up (local demo mode)",
-          severity: "success",
-        }),
+          severity: "success"
+        })
       );
       navigate("/snap");
     } catch (error: any) {
       dispatch(
         addSnackbar({
           message: error?.message ?? "Failed to sign up",
-          severity: "error",
-        }),
+          severity: "error"
+        })
       );
     } finally {
       setLoading(false);
@@ -61,7 +61,7 @@ export default function SignUp() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               required
               autoComplete="email"
             />
@@ -71,7 +71,7 @@ export default function SignUp() {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               required
               autoComplete="new-password"
             />

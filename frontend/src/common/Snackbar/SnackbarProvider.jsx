@@ -11,8 +11,8 @@ const SnackbarProvider = () => {
     open,
     message,
     severity,
-    autoHideDuration = 6000,
-  } = useSelector((state) => state.snackbarState);
+    autoHideDuration = 6000
+  } = useSelector(state => state.snackbarState);
 
   const handleClose = (event, reason) => {
     if (reason === "clickaway") {
@@ -28,12 +28,7 @@ const SnackbarProvider = () => {
       onClose={handleClose}
       anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
     >
-      <Alert
-        onClose={handleClose}
-        severity={severity}
-        variant="filled"
-        sx={{ width: "100%" }}
-      >
+      <Alert onClose={handleClose} severity={severity} variant="filled" sx={{ width: "100%" }}>
         {message}
       </Alert>
     </Snackbar>
