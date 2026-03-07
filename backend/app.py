@@ -8,6 +8,8 @@ from google.genai import types
 from dotenv import load_dotenv
 import os
 
+from ebay import post_listing, upload_image
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -44,11 +46,9 @@ def analyze_item():
   "name": "short item name",
   "description": "detailed description of the item",
   "condition": "one of: New | Like New | Good | Fair | Poor",
-  "category": "item category (e.g. Electronics, Clothing, Collectibles, Tools, Furniture)",
+  "category": "item category (e.g. Electronics, Clothing, Collectibles, Tools, Furniture, Shoes, etc)",
   "brand": "brand or manufacturer if identifiable, or null",
-  "year": "estimated year or era of manufacture if relevant (e.g. '2019', '1980s'), or null",
-  "is_shoe": true or false — true if the item is a shoe or sneaker,
-  "is_collectible": true or false — true if the item is a collectible (e.g. trading card, figurine, comic, memorabilia, limited edition item)
+  "year": "estimated year or era of manufacture if relevant (e.g. '2019', '1980s'), or null"
 }
 Return ONLY the JSON object. No markdown, no explanation."""
 
@@ -64,6 +64,40 @@ Return ONLY the JSON object. No markdown, no explanation."""
     except (json.JSONDecodeError, ValueError) as e:
         return jsonify({"error": "Failed to parse AI response", "raw": response.text}), 500
 
+    return jsonify(result)
+
+
+@app.route("/api/upload-image", methods=["POST"])
+def upload_image_route():
+    if "image" not in request.files:
+        return jsonify({"error": "No image provided"}), 400
+    file = request.files["image"]
+    try:
+        url = upload_image(file.read(), file.content_type or "image/jpeg", file.filename or "item-image")
+        return jsonify({"url": url})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/post-listing", methods=["POST"])
+def post_listing_route():
+    data = request.get_json()
+    required = ["title", "description", "price", "category_id", "condition"]
+    if missing := [f for f in required if f not in data]:
+        return jsonify({"error": f"Missing fields: {missing}"}), 400
+
+    verify = data.get("verify", True)  # defaults to dry run
+
+    result = post_listing(
+        title=data["title"],
+        description=data["description"],
+        price=float(data["price"]),
+        category_id=str(data["category_id"]),
+        condition=data["condition"],
+        item_specifics=data.get("item_specifics", {}),
+        image_urls=data.get("image_urls", []),
+        verify=verify,
+    )
     return jsonify(result)
 
 
