@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import "../App.css";
 
-export default function LandingPage() {
+const LandingPage = () => {
   const navigate = useNavigate();
   const loginResult = useSelector((state: any) => state.userState.loginResult);
   const isLoggedIn = Boolean(loginResult);
@@ -50,4 +50,6 @@ export default function LandingPage() {
       </main>
     </div>
   );
-}
+};
+
+export default LandingPage;

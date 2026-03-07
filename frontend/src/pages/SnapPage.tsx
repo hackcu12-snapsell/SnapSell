@@ -16,7 +16,7 @@ type Stage = "upload" | "loading" | "confirm" | "done";
 
 const CONDITIONS = ["New", "Like New", "Good", "Fair", "Poor"];
 
-export default function SnapPage() {
+const SnapPage = () => {
   const [stage, setStage] = useState<Stage>("upload");
   const [preview, setPreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -200,4 +200,6 @@ export default function SnapPage() {
       )}
     </div>
   );
-}
+};
+
+export default SnapPage;

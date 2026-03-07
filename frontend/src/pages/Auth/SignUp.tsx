@@ -6,7 +6,7 @@ import { signup, addLoginAuthentication } from "../../redux/actions/userActions"
 import { addSnackbar } from "../../redux/actions/snackbarActions";
 import "../../App.css";
 
-export default function SignUp() {
+const SignUp = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -86,4 +86,6 @@ export default function SignUp() {
       </div>
     </div>
   );
-}
+};
+
+export default SignUp;
