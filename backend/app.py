@@ -305,6 +305,8 @@ def save_item():
         release_conn(conn)
 
     # Trigger price agent and log result
+
+    #this is the point where we could trigger the verify add item +place holder data 
     print(f"\n[save-item] Item {item_id} saved — triggering appraisal...")
     try:
         resp = http_requests.post(
