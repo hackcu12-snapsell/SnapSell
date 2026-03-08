@@ -90,7 +90,7 @@ def _stop_price_agent() -> None:
 if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
     _start_price_agent()
 
-from ebay import post_listing, upload_image
+from ebay import post_listing, upload_image, revise_item
 from auth import auth_bp, get_current_user_id
 from fraud import fraud_bp
 from db import get_conn, release_conn
@@ -544,6 +544,38 @@ def _extract_missing_specifics(errors: list) -> list[str]:
     return missing
 
 
+ALLOWED_STATUSES = {"inventory", "listed", "sold", "appraised"}
+
+@app.route("/api/items/<int:item_id>/status", methods=["PATCH"])
+def update_item_status(item_id: int):
+    user_id = _require_user()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+    status = (data.get("status") or "").strip()
+    if status not in ALLOWED_STATUSES:
+        return jsonify({"error": f"Invalid status: {status}"}), 400
+
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE items SET status = %s WHERE id = %s AND userid = %s",
+                (status, item_id, user_id),
+            )
+            if cur.rowcount == 0:
+                return jsonify({"error": "Item not found"}), 404
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": f"DB error: {e}"}), 500
+    finally:
+        release_conn(conn)
+
+    return jsonify({"item_id": item_id, "status": status}), 200
+
+
 @app.route("/api/list-on-ebay", methods=["POST"])
 def list_on_ebay():
     user_id = _require_user()
@@ -650,6 +682,70 @@ def list_on_ebay():
         release_conn(conn)
 
     return jsonify({"ebay_item_id": ebay_item_id, "listing_url": listing_url}), 201
+
+
+@app.route("/api/revise-listing", methods=["POST"])
+def revise_listing():
+    user_id = _require_user()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+    item_id   = data.get("item_id")
+    new_price = data.get("new_price")
+
+    if not item_id or new_price is None:
+        return jsonify({"error": "item_id and new_price are required"}), 400
+
+    new_price = float(new_price)
+
+    # Fetch the eBay listing URL to extract the eBay item ID
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT ebay_listing_url FROM items WHERE id = %s AND userid = %s",
+                (item_id, user_id),
+            )
+            row = cur.fetchone()
+    except Exception as e:
+        return jsonify({"error": f"DB error: {e}"}), 500
+    finally:
+        release_conn(conn)
+
+    if not row or not row[0]:
+        return jsonify({"error": "Item not found or not listed on eBay"}), 404
+
+    ebay_listing_url = row[0]
+    ebay_item_id = ebay_listing_url.rstrip("/").split("/")[-1]
+    print(f"[revise-listing] item_id={item_id}, ebay_item_id={ebay_item_id}, new_price={new_price}")
+
+    try:
+        result = revise_item(ebay_item_id, new_price)
+    except Exception as e:
+        return jsonify({"error": f"eBay ReviseItem failed: {e}"}), 500
+
+    print(f"[revise-listing] eBay response: ack={result.get('ack')} errors={result.get('errors')}")
+
+    if result.get("ack") not in ("Success", "Warning"):
+        return jsonify({"error": "eBay rejected the revision", "details": result}), 500
+
+    # Update listing_price and last_price_change_date in DB
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE items SET listing_price = %s, last_price_change_date = NOW() WHERE id = %s",
+                (new_price, item_id),
+            )
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"[revise-listing] DB update failed: {e}")
+    finally:
+        release_conn(conn)
+
+    return jsonify({"ebay_item_id": ebay_item_id, "new_price": new_price}), 200
 
 
 if __name__ == "__main__":

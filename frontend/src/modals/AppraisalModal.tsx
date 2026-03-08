@@ -124,7 +124,21 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
   }, [isOpen, data]);
 
   const close = () => handleClose(MODAL_ID);
-  const handleKeep = () => close();
+
+  const handleKeep = async () => {
+    if (data?.item_id) {
+      try {
+        await fetch(`/api/items/${data.item_id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status: "inventory" }),
+        });
+      } catch (err) {
+        console.error("[AppraisalModal] Failed to update status:", err);
+      }
+    }
+    close();
+  };
 
   const setSpecific = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setSpecificValues(v => ({ ...v, [key]: e.target.value }));
@@ -308,7 +322,7 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
 
       <div style={styles.twoCol}>
         <label style={styles.fieldLabel}>
-          List Price ($)
+          Purchase Price ($)
           <input
             type="number"
             min="0"

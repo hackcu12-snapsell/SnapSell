@@ -191,8 +191,8 @@ const CollectionPage = () => {
                 ""
             ),
             price:
-              typeof raw.listing_price === "number"
-                ? raw.listing_price
+              typeof raw.mean_value === "number"
+                ? raw.mean_value
                 : null,
             createdAt:
               typeof raw.created_at === "string"

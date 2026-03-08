@@ -73,6 +73,12 @@ const CollectionItemPage = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  const [newPrice, setNewPrice] = useState("");
+  const [revising, setRevising] = useState(false);
+  const [reviseError, setReviseError] = useState<string | null>(null);
+  const [reviseSuccess, setReviseSuccess] = useState(false);
+  const [revisePriceOpen, setRevisePriceOpen] = useState(false);
+
   const getListingDisplayName = (url: string) => {
     if (!url) return "";
 
@@ -278,6 +284,33 @@ const CollectionItemPage = () => {
     }
   };
 
+  const handleRevisePrice = async () => {
+    if (!item || !newPrice.trim()) return;
+    setRevising(true);
+    setReviseError(null);
+    setReviseSuccess(false);
+    try {
+      const res = await fetch("/api/revise-listing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ item_id: item.id, new_price: parseFloat(newPrice) })
+      });
+      const result = (await res.json()) as Record<string, unknown>;
+      if (!res.ok) {
+        setReviseError((result.error as string) ?? "Failed to revise price");
+      } else {
+        setItem(prev => prev ? { ...prev, listingPrice: parseFloat(newPrice) } : prev);
+        setReviseSuccess(true);
+        setNewPrice("");
+        setTimeout(() => setRevisePriceOpen(false), 1000);
+      }
+    } catch {
+      setReviseError("Network error — try again");
+    } finally {
+      setRevising(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="collection-item-page">
@@ -339,6 +372,49 @@ const CollectionItemPage = () => {
               View Listing
             </button>
           )}
+
+          {item.status === "listed" && (
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                className="collection-item-btn"
+                onClick={() => { setRevisePriceOpen(o => !o); setReviseError(null); setReviseSuccess(false); setNewPrice(""); }}
+              >
+                Revise Price
+              </button>
+              {revisePriceOpen && (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 8px)", right: 0,
+                  background: "#1e1e1e", border: "1px solid rgba(255,255,255,0.15)",
+                  borderRadius: "10px", padding: "14px", width: "220px",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.5)", zIndex: 20,
+                  display: "flex", flexDirection: "column", gap: "10px"
+                }}>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newPrice}
+                    onChange={e => { setNewPrice(e.target.value); setReviseError(null); setReviseSuccess(false); }}
+                    placeholder={item.listingPrice != null ? `Current: $${item.listingPrice.toFixed(2)}` : "New price"}
+                    autoFocus
+                    style={{ padding: "8px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.07)", color: "#fff", fontSize: "0.95rem" }}
+                  />
+                  <button
+                    type="button"
+                    className="collection-item-btn"
+                    onClick={handleRevisePrice}
+                    disabled={revising || !newPrice.trim()}
+                    style={{ width: "100%" }}
+                  >
+                    {revising ? "Updating…" : "Update Price"}
+                  </button>
+                  {reviseSuccess && <p style={{ color: "#4ade80", fontSize: "0.82rem", margin: 0 }}>Price updated!</p>}
+                  {reviseError && <p style={{ color: "#ff6b6b", fontSize: "0.82rem", margin: 0 }}>{reviseError}</p>}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -387,10 +463,10 @@ const CollectionItemPage = () => {
 
         <div className="collection-item-appraisal">
           <span className="collection-item-appraisal-label">
-            {item.status === "listed" ? "Listing Price:" : "Estimated Value:"}
+            {item.status === "listed" || item.status === "sold" ? "Listing Price:" : "Estimated Value:"}
           </span>
           <span className="collection-item-appraisal-value">
-            {item.status === "listed"
+            {item.status === "listed" || item.status === "sold"
               ? item.listingPrice != null && !Number.isNaN(item.listingPrice)
                 ? `$${Number(item.listingPrice).toFixed(2)}`
                 : "—"
@@ -451,6 +527,7 @@ const CollectionItemPage = () => {
           </p>
         )}
       </div>
+
     </div>
   );
 };

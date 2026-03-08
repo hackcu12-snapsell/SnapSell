@@ -159,6 +159,23 @@ def _parse_response(xml_text: str) -> dict:
     return {"ack": ack, "item_id": item_id, "fees": fees, "errors": errors}
 
 
+def revise_item(ebay_item_id: str, new_price: float) -> dict:
+    """Update the price of an existing eBay sandbox listing via ReviseItem."""
+    xml_body = f"""<?xml version="1.0" encoding="utf-8"?>
+<ReviseItemRequest xmlns="{NS}">
+  <RequesterCredentials>
+    <eBayAuthToken>{os.environ["EBAY_USER_TOKEN"]}</eBayAuthToken>
+  </RequesterCredentials>
+  <Item>
+    <ItemID>{ebay_item_id}</ItemID>
+    <StartPrice>{new_price:.2f}</StartPrice>
+  </Item>
+</ReviseItemRequest>"""
+    resp = requests.post(SANDBOX_URL, data=xml_body.encode("utf-8"), headers=_headers("ReviseItem"))
+    resp.raise_for_status()
+    return _parse_response(resp.text)
+
+
 def post_listing(title: str, description: str, price: float,
                  category_id: str, condition: str,
                  item_specifics: dict = None, image_urls: list = None,
