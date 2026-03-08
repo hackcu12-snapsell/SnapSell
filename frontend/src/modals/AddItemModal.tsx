@@ -456,6 +456,16 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
           </label>
 
           <label style={styles.fieldLabel}>
+            Condition
+            <input
+              value={condition}
+              onChange={e => setCondition(e.target.value)}
+              placeholder="e.g. Good, Like New, Fair"
+              style={styles.input}
+            />
+          </label>
+
+          <label style={styles.fieldLabel}>
             Purchase Price ($)
             <input
               type="number"
