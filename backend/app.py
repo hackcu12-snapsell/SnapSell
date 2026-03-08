@@ -56,12 +56,14 @@ _start_price_agent()
 
 from ebay import post_listing, upload_image
 from auth import auth_bp
+from fraud import fraud_bp
 from category import resolve_category
 
 app = Flask(__name__)
 CORS(app)
 
 app.register_blueprint(auth_bp)
+app.register_blueprint(fraud_bp)
 
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
