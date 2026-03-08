@@ -1,9 +1,10 @@
 /** @module AppraisalModal */
 
 import React, { useEffect, useState, type CSSProperties } from "react";
-import { useAppSelector } from "../redux/hooks";
+import { useAppDispatch, useAppSelector } from "../redux/hooks";
 import Modal from "../common/Modal/Modal";
 import { getItemImageUrl } from "../data/constants";
+import { addSnackbar } from "../redux/actions/snackbarActions";
 
 const MODAL_ID = "appraisalModal";
 
@@ -72,6 +73,7 @@ const pct = (val: unknown) =>
   val != null && typeof val === "number" ? `${Math.round(val * 100)}%` : "—";
 
 const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) => {
+  const dispatch = useAppDispatch();
   const isOpen = useAppSelector(state => Boolean(state.modalState[MODAL_ID]));
   const tokenFromStore = useAppSelector(state => state.userState.loginResult?.token);
   const token =
@@ -127,11 +129,14 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
   const handleKeep = async () => {
     if (data?.item_id) {
       try {
-        await fetch(`/api/items/${data.item_id}/status`, {
+        const res = await fetch(`/api/items/${data.item_id}/status`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ status: "inventory" }),
+          body: JSON.stringify({ status: "inventory" })
         });
+        if (res.ok) {
+          dispatch(addSnackbar({ message: "Added to inventory", severity: "success" }));
+        }
       } catch (err) {
         console.error("[AppraisalModal] Failed to update status:", err);
       }
@@ -196,6 +201,7 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
       }
 
       console.log("[AppraisalModal] Listed on eBay:", result.listing_url);
+      dispatch(addSnackbar({ message: "Listing created successfully", severity: "success" }));
       close();
     } catch {
       setError("Network error — try again");
