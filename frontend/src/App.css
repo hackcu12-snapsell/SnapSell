@@ -504,7 +504,11 @@ pre {
 }
 
 .collection-item-page {
-  padding-top: 1rem;
+  padding: 1rem 1.25rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .collection-item-header {
@@ -520,6 +524,15 @@ pre {
   margin: 0;
   font-size: 1.75rem;
   font-weight: 600;
+  line-height: 1.3;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.collection-item-title-sep {
+  margin: 0 0.35em;
+  color: #888;
+  font-weight: 400;
 }
 
 .collection-item-status {
@@ -529,8 +542,30 @@ pre {
 
 .collection-item-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.collection-item-revise-wrap {
+  position: relative;
+}
+
+.collection-item-revise-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 14px;
+  width: 220px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .collection-item-btn {
@@ -550,8 +585,9 @@ pre {
 
 .collection-item-detail {
   display: flex;
+  flex-wrap: wrap;
   gap: 2rem;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 1.5rem;
 }
 
@@ -573,18 +609,46 @@ pre {
   width: 100%;
   max-width: 100%;
   padding: 1rem;
-  background: #f8f8f8;
+  background: #242424;
   border-radius: 10px;
-  border: 1px solid #eee;
+  border: 1px solid #555;
   margin-top: 0.5rem;
   box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.collection-item-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.collection-item-table-wrap .MuiTableHead-root .MuiTableRow-root,
+.collection-item-table-wrap tbody .MuiTableRow-root,
+.collection-item-table-wrap .MuiTablePagination-root {
+  background: #303030;
+}
+
+.collection-item-table-wrap .MuiTablePagination-root,
+.collection-item-table-wrap .MuiTablePagination-root .MuiTablePagination-selectLabel,
+.collection-item-table-wrap .MuiTablePagination-root .MuiTablePagination-displayedRows,
+.collection-item-table-wrap .MuiTablePagination-root .MuiSelect-select {
+  color: #fff;
+}
+
+.collection-item-table-wrap .MuiTableCell-root {
+  border-bottom: 1px solid #666;
+  color: #fff;
+}
+
+.collection-item-table-wrap .MuiTableHead-root .MuiTableCell-root {
+  font-weight: 700;
 }
 
 .collection-item-listings-title {
   margin: 0 0 0.75rem 0;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #333;
+  color: #eee;
 }
 
 .collection-item-listings-table {
@@ -610,7 +674,7 @@ pre {
 }
 
 .collection-item-listings-link {
-  color: #646cff;
+  color: #7eb8ff;
   text-decoration: none;
   word-break: break-all;
 }
@@ -622,7 +686,7 @@ pre {
 .collection-item-listings-empty {
   margin: 0;
   font-size: 0.9rem;
-  color: #888;
+  color: #bbb;
 }
 
 .collection-item-image {
@@ -647,12 +711,14 @@ pre {
   grid-template-columns: auto 1fr;
   gap: 0.35rem 1.5rem;
   align-items: baseline;
+  flex: 1 1 280px;
+  min-width: 0;
 }
 
 .collection-item-meta dt {
   margin: 0;
   font-weight: 600;
-  color: #555;
+  color: #fff;
   font-size: 0.9rem;
 }
 
@@ -672,7 +738,7 @@ pre {
   flex-direction: column;
   gap: 0.35rem;
   padding: 1.25rem 1.5rem;
-  background: #f5f5f5;
+  background: #6c6c6c;
   border-radius: 12px;
   min-width: 180px;
 }
@@ -680,13 +746,13 @@ pre {
 .collection-item-appraisal-label {
   font-size: 1.2rem;
   font-weight: 600;
-  color: #555;
+  color: #fff;
 }
 
 .collection-item-appraisal-value {
   font-size: 2rem;
   font-weight: 600;
-  color: #333;
+  color: #fff;
 }
 
 .collection-item-loading,
@@ -701,12 +767,136 @@ pre {
 .collection-item-back {
   display: inline-block;
   margin-bottom: 0.75rem;
-  color: #646cff;
+  color: #7eb8ff;
   text-decoration: none;
 }
 
 .collection-item-back:hover {
   text-decoration: underline;
+}
+
+/* Collection item page: responsive */
+@media (max-width: 1200px) {
+  .collection-item-detail {
+    gap: 1.5rem;
+  }
+  .collection-item-image-column {
+    margin-left: 0;
+  }
+  .collection-item-appraisal {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  .collection-item-detail {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.5rem;
+  }
+  .collection-item-image-column {
+    width: 100%;
+    max-width: 320px;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .collection-item-meta {
+    flex: none;
+    width: 100%;
+  }
+  .collection-item-appraisal {
+    margin-left: 0;
+    width: 100%;
+    max-width: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .collection-item-page {
+    padding: 0.75rem 1rem 1.5rem;
+  }
+  .collection-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .collection-item-title {
+    font-size: 1.4rem;
+    width: 100%;
+  }
+  .collection-item-actions {
+    width: 100%;
+  }
+  .collection-item-detail {
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .collection-item-image-column {
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  .collection-item-appraisal {
+    max-width: 100%;
+  }
+  .collection-item-revise-dropdown {
+    right: auto;
+    left: 0;
+    width: 100%;
+    min-width: 220px;
+    max-width: 280px;
+  }
+  .collection-item-listings-card {
+    padding: 0.75rem;
+  }
+  .collection-item-table-wrap .MuiTable-root {
+    min-width: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .collection-item-page {
+    padding: 0.5rem 0.75rem 1rem;
+  }
+  .collection-item-title {
+    font-size: 1.2rem;
+  }
+  .collection-item-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .collection-item-actions .collection-item-btn {
+    width: 100%;
+  }
+  .collection-item-revise-wrap {
+    width: 100%;
+  }
+  .collection-item-revise-wrap .collection-item-btn {
+    width: 100%;
+  }
+  .collection-item-revise-dropdown {
+    max-width: 100%;
+  }
+  .collection-item-meta {
+    grid-template-columns: 1fr;
+    gap: 0.25rem 0;
+  }
+  .collection-item-meta dt {
+    margin-top: 0.5rem;
+  }
+  .collection-item-meta dt:first-child {
+    margin-top: 0;
+  }
+  .collection-item-meta dd {
+    margin-bottom: 0.25rem;
+  }
+  .collection-item-table-wrap .MuiTable-root {
+    min-width: 320px;
+    font-size: 0.85rem;
+  }
+  .collection-item-table-wrap .MuiTableCell-root {
+    padding: 0.35rem 0.5rem;
+  }
 }
 
 .collection-grid {
