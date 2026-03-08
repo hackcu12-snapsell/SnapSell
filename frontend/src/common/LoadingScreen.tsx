@@ -3,14 +3,16 @@ import React, { useState, useEffect } from "react";
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface LoadingScreenProps {
-  onComplete?: () => void;    // called when the component unmounts (loading done)
-  backgroundColor?: string;   // default "#F5F2EE"
-  contained?: boolean;        // position:absolute filling the nearest relative parent instead of full-screen fixed
+  onComplete?: () => void;
+  backgroundColor?: string;
+  contained?: boolean;
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
+// Story arc: snap a photo → box it up → ship it → profit → enjoy the beach
 const EMOJIS = ["👟", "📱", "📸", "📦", "✈️", "💵", "😊", "🏖️"] as const;
+const N = EMOJIS.length;
 
 const LOADING_LINES = [
   "Photographing your item...",
@@ -42,36 +44,26 @@ const LOADING_LINES = [
   "Talking yourself out of keeping it again...",
   "Measuring something with a shoe...",
   "Realizing you owned this for 8 years unused...",
-  "Celebrating quietly at the kitchen table..."
+  "Celebrating quietly at the kitchen table...",
 ] as const;
 
-// ─── Timing ───────────────────────────────────────────────────────────────────
+// ─── Timing & geometry ────────────────────────────────────────────────────────
 
-const ENTER_MS = 440;
-const HOLD_MS = 1050;
-const EXIT_MS = 380;
+// How long each emoji stays featured at the bottom of the orbit
+const STEP_MS = 2000;
+// CSS transition duration for orbit rotation (kept in sync with emoji counter-rotation)
+const ORBIT_TRANSITION_MS = 750;
 const TEXT_FADE_MS = 280;
 
-type Phase = "enter" | "hold" | "exit";
-
-const PHASE_DURATION: Record<Phase, number> = {
-  enter: ENTER_MS,
-  hold: HOLD_MS,
-  exit: EXIT_MS
-};
-
-const NEXT_PHASE: Record<Phase, Phase> = {
-  enter: "hold",
-  hold: "exit",
-  exit: "enter" // special-cased below to also advance emojiIndex
-};
+// Orbit circle radius in px. Each emoji is centered at this distance from the origin.
+const ORBIT_R = 62;
+// Each step rotates the orbit by one slot
+const DEG_PER_STEP = 360 / N; // 45°
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const FONT_LINK_ID = "__ls_font__";
 
-// One string — injected as a <style> tag in the JSX so it's always present
-// on the first render without needing a useEffect flush.
 const CSS = `
   .ls-root {
     position: fixed;
@@ -84,44 +76,49 @@ const CSS = `
     z-index: 9999;
   }
 
-  /* Clip window so the emoji doesn't peek out at the edges during travel */
-  .ls-stage {
-    overflow: hidden;
-    width: 100%;
+  /* Fixed-size stage so the orbit never bleeds out */
+  .ls-orbit-stage {
+    position: relative;
+    width: ${ORBIT_R * 2 + 80}px;
+    height: ${ORBIT_R * 2 + 80}px;
     display: flex;
-    justify-content: center;
     align-items: center;
-    height: 140px;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
-  .ls-emoji {
-    font-size: 80px;
+  /* The rotating ring — CSS transition keeps the spin smooth */
+  .ls-orbit {
+    position: relative;
+    width: ${ORBIT_R * 2}px;
+    height: ${ORBIT_R * 2}px;
+    transition: transform ${ORBIT_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Each emoji is absolutely centered at the orbit origin, then translated outward */
+  .ls-orbit-emoji {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 36px;
+    height: 36px;
+    margin-left: -18px;
+    margin-top: -18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
     line-height: 1;
-    display: block;
-    will-change: transform, opacity;
     user-select: none;
+    opacity: 0.25;
+    /* transform is set inline; transition covers both the counter-rotation and scale */
+    transition:
+      transform ${ORBIT_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1),
+      opacity   ${ORBIT_TRANSITION_MS}ms ease;
   }
 
-  /* ── Phase animations ─────────────────────────────────── */
-
-  .ls-emoji--enter {
-    animation: lsIn ${ENTER_MS}ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
-  .ls-emoji--hold {
-    /* forwards fill from the enter animation keeps it at translateX(0) */
+  .ls-orbit-emoji--featured {
     opacity: 1;
-  }
-  .ls-emoji--exit {
-    animation: lsOut ${EXIT_MS}ms cubic-bezier(0.64, 0, 0.78, 0) forwards;
-  }
-
-  @keyframes lsIn {
-    from { transform: translateX(130vw); opacity: 0; }
-    to   { transform: translateX(0);    opacity: 1; }
-  }
-  @keyframes lsOut {
-    from { transform: translateX(0);      opacity: 1; }
-    to   { transform: translateX(-130vw); opacity: 0; }
   }
 
   /* ── Loading text ─────────────────────────────────────── */
@@ -149,20 +146,19 @@ const CSS = `
   /* ── Mobile ───────────────────────────────────────────── */
 
   @media (max-width: 600px) {
-    .ls-emoji       { font-size: 56px; }
-    .ls-stage       { height: 96px; }
-    .ls-text        { font-size: 14px; bottom: 8vh; }
+    .ls-text { font-size: 14px; bottom: 8vh; }
   }
 
   /* ── Contained mode: fills the nearest position:relative parent ── */
 
   .ls-root--contained {
     position: absolute;
+    inset: 0;
     z-index: 10;
   }
   .ls-root--contained .ls-text {
     position: absolute;
-    bottom: 8%;
+    bottom: 6%;
     font-size: 13px;
   }
 `;
@@ -174,43 +170,42 @@ export default function LoadingScreen({
   backgroundColor = "#F5F2EE",
   contained = false,
 }: LoadingScreenProps): React.ReactElement {
+  // Which emoji is currently at the bottom of the orbit (the featured one)
   const [emojiIndex, setEmojiIndex] = useState(0);
-  const [phase, setPhase] = useState<Phase>("enter");
+  // Cumulative orbit rotation. Starts at 180° so emoji 0 (👟) opens at the bottom.
+  // Decreases by DEG_PER_STEP each step so the orbit spins clockwise continuously.
+  const [orbitRot, setOrbitRot] = useState(180);
   const [textIndex, setTextIndex] = useState(0);
   const [textVisible, setTextVisible] = useState(true);
 
-  // Inject Google Fonts link once per page load
+  // Inject Google Fonts link once, signal parent on unmount
   useEffect(() => {
     if (!document.getElementById(FONT_LINK_ID)) {
       const link = document.createElement("link");
       link.id = FONT_LINK_ID;
       link.rel = "stylesheet";
-      link.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&display=swap";
+      link.href =
+        "https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&display=swap";
       document.head.appendChild(link);
     }
-    // Signal the parent when this screen unmounts (loading is done)
     return () => {
       onComplete?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Phase state machine ──────────────────────────────────────────────────
+  // Advance the featured emoji on a fixed interval
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (phase === "exit") {
-        // Advance to the next emoji and restart the cycle
-        setEmojiIndex(i => (i + 1) % EMOJIS.length);
-        setPhase("enter");
-      } else {
-        setPhase(NEXT_PHASE[phase]);
-      }
-    }, PHASE_DURATION[phase]);
-
+      setEmojiIndex(i => (i + 1) % N);
+      // Each step rotates the orbit one slot counter-clockwise (visually: next emoji
+      // travels to the bottom spotlight position)
+      setOrbitRot(prev => prev - DEG_PER_STEP);
+    }, STEP_MS);
     return () => clearTimeout(timer);
-  }, [phase]);
+  }, [emojiIndex]);
 
-  // ── Text fade-out → swap → fade-in on each new emoji ────────────────────
+  // Fade the loading text out → swap → fade back in each time the emoji changes
   useEffect(() => {
     setTextVisible(false);
     const swap = setTimeout(() => {
@@ -222,18 +217,47 @@ export default function LoadingScreen({
 
   return (
     <>
-      {/* Self-contained styles: rendered inline so they're present on frame 1 */}
+      {/* Self-contained styles rendered inline so they're present on frame 1 */}
       <style>{CSS}</style>
 
-      <div className={`ls-root${contained ? " ls-root--contained" : ""}`} style={{ backgroundColor }}>
-        <div className="ls-stage">
+      <div
+        className={`ls-root${contained ? " ls-root--contained" : ""}`}
+        style={{ backgroundColor }}
+      >
+        {/* Fixed-size orbit stage — overflow hidden keeps emojis clipped */}
+        <div className="ls-orbit-stage">
           {/*
-            key={emojiIndex} forces React to mount a fresh element for each
-            emoji, which re-triggers the CSS animation from the start.
+            The orbit div rotates as a whole. Each emoji counter-rotates by the
+            same amount to stay upright. Because both transitions share the same
+            duration + easing, they stay perfectly in sync.
           */}
-          <span key={emojiIndex} className={`ls-emoji ls-emoji--${phase}`} aria-hidden="true">
-            {EMOJIS[emojiIndex]}
-          </span>
+          <div
+            className="ls-orbit"
+            style={{ transform: `rotate(${orbitRot}deg)` }}
+          >
+            {EMOJIS.map((emoji, i) => {
+              // Static angle for this emoji slot (evenly distributed around the circle)
+              const angleDeg = (i / N) * 360;
+              const angleRad = (angleDeg * Math.PI) / 180;
+              // Position on the circle (CSS coords: y increases downward, so negate cos)
+              const x = ORBIT_R * Math.sin(angleRad);
+              const y = -ORBIT_R * Math.cos(angleRad);
+              const isFeatured = i === emojiIndex;
+
+              return (
+                <span
+                  key={i}
+                  className={`ls-orbit-emoji${isFeatured ? " ls-orbit-emoji--featured" : ""}`}
+                  style={{
+                    transform: `translate(${x}px, ${y}px) rotate(${-orbitRot}deg) scale(${isFeatured ? 2 : 0.7})`,
+                  }}
+                  aria-hidden="true"
+                >
+                  {emoji}
+                </span>
+              );
+            })}
+          </div>
         </div>
 
         <p

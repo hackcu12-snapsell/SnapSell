@@ -1,3 +1,4 @@
+
 /** @module AppraisalModal */
 
 import React, { useEffect, useState, type CSSProperties } from "react";
@@ -10,6 +11,8 @@ const CONDITIONS = ["New", "Like New", "Good", "Fair", "Poor"] as const;
 
 type Condition = (typeof CONDITIONS)[number];
 
+type Decision = "buy" | "pass" | "haggle" | "not_enough_info";
+
 type AppraisalValues = {
   lowest_value?: number;
   mean_value?: number;
@@ -17,7 +20,29 @@ type AppraisalValues = {
   value_confidence?: number;
   volume?: number;
   value_reasoning?: string;
+  decision?: string;
 };
+
+const DECISION_CONFIG: Record<Decision, { label: string; color: string; bg: string }> = {
+  buy:              { label: "Buy",              color: "#22c55e", bg: "rgba(34,197,94,0.13)"  },
+  pass:             { label: "Pass",             color: "#ef4444", bg: "rgba(239,68,68,0.13)"  },
+  haggle:           { label: "Haggle",           color: "#f59e0b", bg: "rgba(245,158,11,0.13)" },
+  not_enough_info:  { label: "Not Enough Info",  color: "#888",    bg: "rgba(136,136,136,0.1)" },
+};
+
+function decisionMessage(d: Decision, meanValue?: number): string {
+  const val = meanValue != null ? `$${Math.round(meanValue)}` : "an unknown amount";
+  switch (d) {
+    case "buy":
+      return `Appraised at ${val} — comparable sales are strong. This item should sell well at or near market rate.`;
+    case "pass":
+      return `Appraised at ${val} — market demand appears low or the category is oversaturated. Consider adjusting your price or timing.`;
+    case "haggle":
+      return `Appraised at ${val} — pricing is competitive. You may need to negotiate or price slightly below mean to move it quickly.`;
+    default:
+      return "We couldn't find enough comparable sales to make a confident recommendation for this item.";
+  }
+}
 
 type AppraisalData = {
   item_id?: number;
@@ -65,6 +90,7 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
   const [condition, setCondition] = useState<Condition>("Good");
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
   // Missing item specifics required by eBay
   const [missingSpecifics, setMissingSpecifics] = useState<string[]>([]);
   const [specificValues, setSpecificValues] = useState<Record<string, string>>({});
@@ -226,6 +252,26 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
             {appr.volume != null && <span>{appr.volume} comparable sales</span>}
           </div>
           {appr.value_reasoning && <p style={styles.reasoning}>{appr.value_reasoning}</p>}
+
+          {/* ── Decision bar ── */}
+          {appr.decision && (() => {
+            const key = (appr.decision as string).toLowerCase() as Decision;
+            const cfg = DECISION_CONFIG[key] ?? DECISION_CONFIG.not_enough_info;
+            const msg = decisionMessage(key, appr.mean_value);
+            return (
+              <div style={{ ...styles.decisionBar, background: cfg.bg, borderColor: cfg.color + "44" }}>
+                <span style={{ ...styles.decisionLabel, color: cfg.color }}>{cfg.label}</span>
+                <span
+                  style={styles.decisionInfoWrap}
+                  onMouseEnter={() => setTooltipOpen(true)}
+                  onMouseLeave={() => setTooltipOpen(false)}
+                >
+                  <span style={styles.decisionInfoIcon}>ⓘ</span>
+                  {tooltipOpen && <span style={styles.decisionTooltip}>{msg}</span>}
+                </span>
+              </div>
+            );
+          })()}
         </>
       ) : (
         <p style={styles.noAppraisal}>Appraisal unavailable</p>
@@ -446,7 +492,51 @@ const styles: Record<string, CSSProperties> = {
     textTransform: "uppercase",
     letterSpacing: "0.06em"
   },
-  error: { color: "#ff6b6b", fontSize: "0.82rem", margin: "0" }
+  error: { color: "#ff6b6b", fontSize: "0.82rem", margin: "0" },
+  decisionBar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: "8px",
+    border: "1px solid",
+    padding: "9px 12px",
+    marginTop: "10px",
+    marginBottom: "2px"
+  },
+  decisionLabel: {
+    fontWeight: 600,
+    fontSize: "0.85rem",
+    letterSpacing: "0.04em",
+    textTransform: "uppercase" as const
+  },
+  decisionInfoWrap: {
+    position: "relative" as const,
+    display: "flex",
+    alignItems: "center",
+    cursor: "default"
+  },
+  decisionInfoIcon: {
+    fontSize: "0.95rem",
+    color: "#888",
+    lineHeight: 1,
+    userSelect: "none" as const
+  },
+  decisionTooltip: {
+    position: "absolute" as const,
+    right: 0,
+    bottom: "calc(100% + 8px)",
+    width: "220px",
+    background: "#1e1e1e",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: "8px",
+    padding: "10px 12px",
+    fontSize: "0.78rem",
+    color: "#ccc",
+    lineHeight: 1.5,
+    zIndex: 20,
+    pointerEvents: "none" as const,
+    boxShadow: "0 4px 16px rgba(0,0,0,0.5)"
+  }
 };
 
 export default AppraisalModal;
