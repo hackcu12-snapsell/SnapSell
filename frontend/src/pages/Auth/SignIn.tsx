@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { login, addLoginAuthentication } from "../../redux/actions/userActions";
+import { login } from "../../redux/actions/userActions";
 import { addSnackbar } from "../../redux/actions/snackbarActions";
 import { useAppDispatch } from "../../redux/hooks";
 import "../../App.css";
@@ -24,35 +24,13 @@ const SignIn = () => {
     setLoading(true);
 
     try {
-      const response = dispatch(login({ email, password })) as unknown;
-
-      if (typeof response === "object" && response !== null && "success" in response) {
-        const res = response as AuthResponse;
-        if (res.success) {
-          navigate("/snap");
-          return;
-        }
+      const response = await (dispatch(login({ email, password })) as Promise<AuthResponse>);
+      if (response?.success) {
+        navigate("/snap");
       }
-
-      // Fallback for demo mode (no backend)
-      const localUser = { email, name: email.split("@")[0] };
-      localStorage.setItem("user", JSON.stringify(localUser));
-      dispatch(addLoginAuthentication(localUser));
-      dispatch(
-        addSnackbar({
-          message: "Logged in (local demo mode)",
-          severity: "success"
-        })
-      );
-      navigate("/snap");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to sign in";
-      dispatch(
-        addSnackbar({
-          message,
-          severity: "error"
-        })
-      );
+      dispatch(addSnackbar({ message, severity: "error" }));
     } finally {
       setLoading(false);
     }

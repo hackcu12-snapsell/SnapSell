@@ -3,6 +3,7 @@
 import React, { useEffect, useState, type CSSProperties } from "react";
 import { useAppSelector } from "../redux/hooks";
 import Modal from "../common/Modal/Modal";
+import { getItemImageUrl } from "../data/constants";
 
 const MODAL_ID = "appraisalModal";
 
@@ -199,7 +200,11 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
     >
       {(data?.preview || data?.image_url) && (
         <div style={styles.imageWrap}>
-          <img src={data.preview || data.image_url} alt="item" style={styles.image} />
+          <img
+            src={data.preview ?? getItemImageUrl(data?.image_url)}
+            alt="item"
+            style={styles.image}
+          />
           {data.condition && <span style={styles.conditionBadge}>{data.condition}</span>}
         </div>
       )}

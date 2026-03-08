@@ -82,15 +82,21 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Start camera when photo tab is active and capture stage; stop when switching away or closing
   useEffect(() => {
-    if (isOpen && mode === "photo" && stage === "capture" && !capturedFile) {
-      startCamera();
+    if (!isOpen) {
+      stopCamera();
+      return;
     }
-    if (!isOpen) stopCamera();
+    if (mode === "photo" && stage === "capture" && !capturedFile) {
+      startCamera();
+      return;
+    }
+    stopCamera();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, [isOpen, mode, stage, capturedFile]);
 
-  // Assign stream once video element is mounted
+  // Assign stream to video element when it mounts (e.g. after switching back to photo tab)
   useEffect(() => {
     if (cameraActive && streamRef.current && videoRef.current) {
       videoRef.current.srcObject = streamRef.current;

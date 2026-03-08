@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
 
 import { CollectionCard } from "../common";
-import { API_URL } from "../data/constants";
+import { API_URL, getItemImageUrl } from "../data/constants";
 import { addSnackbar } from "../redux/actions/snackbarActions";
 import { basicAPI } from "../utils/utilsThisApp";
 
@@ -184,11 +184,12 @@ const CollectionPage = () => {
             id: typeof raw.id === "number" ? raw.id : 0,
             name: typeof raw.name === "string" ? raw.name : "Untitled item",
             status: (raw.status ?? "inventory") as ItemStatus,
-            imageUrl:
+            imageUrl: getItemImageUrl(
               (typeof raw.imageUrl === "string" && raw.imageUrl) ||
-              (typeof raw.image_url === "string" && raw.image_url) ||
-              (typeof raw.image === "string" && raw.image) ||
-              "",
+                (typeof raw.image_url === "string" && raw.image_url) ||
+                (typeof raw.image === "string" && raw.image) ||
+                ""
+            ),
             price:
               typeof raw.price === "number"
                 ? raw.price
