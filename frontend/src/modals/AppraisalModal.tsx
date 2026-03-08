@@ -196,7 +196,6 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
       title={titleEl}
       style={{ maxWidth: "480px", width: "100%" }}
       footerButtons={footerButtons}
-      footerJustify="space-between"
     >
       {(data?.preview || data?.image_url) && (
         <div style={styles.imageWrap}>
