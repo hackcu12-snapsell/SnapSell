@@ -154,7 +154,7 @@ def analyze_item():
     extra = request.form.get("description", "").strip()
     extra_context = f"\n\nAdditional context from the user: {extra}" if extra else ""
 
-    prompt = f"""Analyze the item in this photo{extra_context} and return ONLY a valid JSON object with these fields:
+    prompt = f"""Analyze the item in this photo {extra_context} and return ONLY a valid JSON object with these fields:
 
 {{
   "name": "short item name",
