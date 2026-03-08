@@ -2,8 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { toggleModal } from "../../redux/actions/modalActions";
 import "./Navbar.css";
 
 export interface NavbarProps {
@@ -12,7 +10,6 @@ export interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogout }) => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [userName, setUserName] = useState("");
 
@@ -50,22 +47,16 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogout }) => {
     navigate("/signup");
   };
 
-  const handleAbout = () => {
-    dispatch(toggleModal("globalModal"));
-  };
+  const logoPath = isLoggedIn ? "/snap" : "/";
 
   return (
     <nav className="navbar">
       <div className="navbar-logo">
-        <Link to="/">SnapSell</Link>
+        <Link to={logoPath}>SnapSell</Link>
       </div>
       <div className="navbar-links">
-        <button className="nav-link" onClick={handleAbout}>
-          About
-        </button>
         {isLoggedIn ? (
           <>
-            <Link to="/snap">Snap</Link>
             <Link to="/collection">Collection</Link>
             {userName && <span className="user-greeting">Hello, {userName}</span>}
             <button className="logout-button" onClick={handleLogout}>
