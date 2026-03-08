@@ -9,6 +9,8 @@ import LandingPage from "./pages/LandingPage";
 import SignIn from "./pages/Auth/SignIn";
 import SignUp from "./pages/Auth/SignUp";
 import SnapPage from "./pages/SnapPage";
+import CollectionPage from "./pages/CollectionPage";
+import CollectionItemPage from "./pages/CollectionItemPage";
 import "./App.css";
 import { addLoginAuthentication, logout } from "./redux/actions/userActions";
 
@@ -93,6 +95,9 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            {/* TODO: Re-enable ProtectedRoute when backend is ready */}
+            <Route path="/collection" element={<CollectionPage />} />
+            <Route path="/collection/item/:id" element={<CollectionItemPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
