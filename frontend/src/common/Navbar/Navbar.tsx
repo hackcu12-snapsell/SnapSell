@@ -1,10 +1,17 @@
+/** @module Navbar */
+
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { toggleModal } from "../../redux/actions/modalActions";
 import "./Navbar.css";
 
-const Navbar = ({ isLoggedIn, onLogout }) => {
+export interface NavbarProps {
+  isLoggedIn: boolean;
+  onLogout?: () => void;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogout }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [userName, setUserName] = useState("");
@@ -13,8 +20,9 @@ const Navbar = ({ isLoggedIn, onLogout }) => {
     // Get user info from localStorage if logged in
     if (isLoggedIn) {
       try {
-        const userInfo = JSON.parse(localStorage.getItem("user"));
+        const userInfo = JSON.parse(localStorage.getItem("user") ?? "");
         if (userInfo && userInfo.name) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setUserName(userInfo.name);
         } else if (userInfo && userInfo.email) {
           // Use email as fallback
@@ -34,12 +42,6 @@ const Navbar = ({ isLoggedIn, onLogout }) => {
       onLogout();
     }
   };
-
-  const handleHomeClick = e => {
-    e.preventDefault();
-    navigate("/", { state: { fromLogin: true } });
-  };
-
   const handleSignIn = () => {
     navigate("/signin");
   };
