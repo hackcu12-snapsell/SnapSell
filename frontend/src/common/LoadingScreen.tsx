@@ -3,8 +3,8 @@ import React, { useState, useEffect } from "react";
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface LoadingScreenProps {
-  onComplete?: () => void;   // called when the component unmounts (loading done)
-  backgroundColor?: string;  // default "#F5F2EE"
+  onComplete?: () => void; // called when the component unmounts (loading done)
+  backgroundColor?: string; // default "#F5F2EE"
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -41,28 +41,28 @@ const LOADING_LINES = [
   "Talking yourself out of keeping it again...",
   "Measuring something with a shoe...",
   "Realizing you owned this for 8 years unused...",
-  "Celebrating quietly at the kitchen table...",
+  "Celebrating quietly at the kitchen table..."
 ] as const;
 
 // ─── Timing ───────────────────────────────────────────────────────────────────
 
 const ENTER_MS = 440;
-const HOLD_MS  = 1050;
-const EXIT_MS  = 380;
+const HOLD_MS = 1050;
+const EXIT_MS = 380;
 const TEXT_FADE_MS = 280;
 
 type Phase = "enter" | "hold" | "exit";
 
 const PHASE_DURATION: Record<Phase, number> = {
   enter: ENTER_MS,
-  hold:  HOLD_MS,
-  exit:  EXIT_MS,
+  hold: HOLD_MS,
+  exit: EXIT_MS
 };
 
 const NEXT_PHASE: Record<Phase, Phase> = {
   enter: "hold",
-  hold:  "exit",
-  exit:  "enter",   // special-cased below to also advance emojiIndex
+  hold: "exit",
+  exit: "enter" // special-cased below to also advance emojiIndex
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -158,7 +158,7 @@ const CSS = `
 
 export default function LoadingScreen({
   onComplete,
-  backgroundColor = "#F5F2EE",
+  backgroundColor = "#F5F2EE"
 }: LoadingScreenProps): React.ReactElement {
   const [emojiIndex, setEmojiIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("enter");
@@ -169,14 +169,16 @@ export default function LoadingScreen({
   useEffect(() => {
     if (!document.getElementById(FONT_LINK_ID)) {
       const link = document.createElement("link");
-      link.id   = FONT_LINK_ID;
-      link.rel  = "stylesheet";
+      link.id = FONT_LINK_ID;
+      link.rel = "stylesheet";
       link.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&display=swap";
       document.head.appendChild(link);
     }
     // Signal the parent when this screen unmounts (loading is done)
-    return () => { onComplete?.(); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      onComplete?.();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Phase state machine ──────────────────────────────────────────────────
@@ -184,7 +186,7 @@ export default function LoadingScreen({
     const timer = setTimeout(() => {
       if (phase === "exit") {
         // Advance to the next emoji and restart the cycle
-        setEmojiIndex((i) => (i + 1) % EMOJIS.length);
+        setEmojiIndex(i => (i + 1) % EMOJIS.length);
         setPhase("enter");
       } else {
         setPhase(NEXT_PHASE[phase]);
@@ -198,7 +200,7 @@ export default function LoadingScreen({
   useEffect(() => {
     setTextVisible(false);
     const swap = setTimeout(() => {
-      setTextIndex((i) => (i + 1) % LOADING_LINES.length);
+      setTextIndex(i => (i + 1) % LOADING_LINES.length);
       setTextVisible(true);
     }, TEXT_FADE_MS + 20);
     return () => clearTimeout(swap);
@@ -215,11 +217,7 @@ export default function LoadingScreen({
             key={emojiIndex} forces React to mount a fresh element for each
             emoji, which re-triggers the CSS animation from the start.
           */}
-          <span
-            key={emojiIndex}
-            className={`ls-emoji ls-emoji--${phase}`}
-            aria-hidden="true"
-          >
+          <span key={emojiIndex} className={`ls-emoji ls-emoji--${phase}`} aria-hidden="true">
             {EMOJIS[emojiIndex]}
           </span>
         </div>
