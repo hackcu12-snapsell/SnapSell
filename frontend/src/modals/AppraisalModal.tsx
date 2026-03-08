@@ -27,6 +27,7 @@ type AppraisalData = {
   item?: {
     name?: string;
     description?: string;
+    brand?: string;
   };
   appraisal?: AppraisalValues;
 };
@@ -59,6 +60,9 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
   const [condition, setCondition] = useState<Condition>("Good");
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Missing item specifics required by eBay
+  const [missingSpecifics, setMissingSpecifics] = useState<string[]>([]);
+  const [specificValues, setSpecificValues] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen && data) {
@@ -74,35 +78,63 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
       setCondition((data.condition as Condition) ?? "Good");
       setError(null);
       setPosting(false);
+      setMissingSpecifics([]);
+      setSpecificValues({});
     }
   }, [isOpen, data]);
 
   const close = () => handleClose(MODAL_ID);
-
   const handleKeep = () => close();
+
+  const setSpecific = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setSpecificValues(v => ({ ...v, [key]: e.target.value }));
+
+  // Pre-fill known specifics from item data
+  const buildSpecifics = (): Record<string, string> => {
+    const out: Record<string, string> = { ...specificValues };
+    if (data?.item?.brand && !out["Brand"]) out["Brand"] = data.item.brand;
+    return out;
+  };
 
   const handlePost = async () => {
     if (!price.trim() || !title.trim()) return;
     setPosting(true);
     setError(null);
-
+    const specifics = buildSpecifics();
+    console.log("[AppraisalModal] specificValues:", specificValues);
+    console.log("[AppraisalModal] item_specifics being sent:", specifics);
     try {
       const res = await fetch("/api/list-on-ebay", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           item_id: data?.item_id,
           title,
           description: desc,
           price: parseFloat(price),
-          condition
+          condition,
+          item_specifics: specifics
         })
       });
 
       const result = (await res.json()) as Record<string, unknown>;
+
+      const missing = result.missing_specifics;
+
+      if (res.status === 409 && Array.isArray(missing) && missing.length > 0) {
+        const known = buildSpecifics();
+        const initial: Record<string, string> = {};
+
+        missing.forEach(f => {
+          initial[f] = known[f] || "";
+        });
+
+        setSpecificValues(initial);
+        setMissingSpecifics(missing);
+        setPosting(false);
+        return;
+      }
+
       if (!res.ok) {
         setError((result?.error as string) ?? "Listing failed");
         setPosting(false);
@@ -237,6 +269,23 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
         </label>
       </div>
 
+      {missingSpecifics.length > 0 && (
+        <div style={styles.specificsBox}>
+          <p style={styles.specificsLabel}>eBay requires these fields to list:</p>
+          {missingSpecifics.map(field => (
+            <label key={field} style={styles.fieldLabel}>
+              {field}
+              <input
+                value={specificValues[field] || ""}
+                onChange={setSpecific(field)}
+                placeholder={`Enter ${field}`}
+                style={styles.input}
+              />
+            </label>
+          ))}
+        </div>
+      )}
+
       {error && <p style={styles.error}>{error}</p>}
     </Modal>
   );
@@ -369,6 +418,20 @@ const styles: Record<string, CSSProperties> = {
     cursor: "pointer"
   },
   twoCol: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" },
+  specificsBox: {
+    background: "rgba(255,200,50,0.07)",
+    border: "1px solid rgba(255,200,50,0.25)",
+    borderRadius: "8px",
+    padding: "12px",
+    marginBottom: "12px"
+  },
+  specificsLabel: {
+    fontSize: "0.78rem",
+    color: "#f5c842",
+    margin: "0 0 10px",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em"
+  },
   error: { color: "#ff6b6b", fontSize: "0.82rem", margin: "0" }
 };
 

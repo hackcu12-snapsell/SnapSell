@@ -81,11 +81,11 @@ ${marketDataBlock}
 
 APPRAISAL RULES:
 0. relevance=0.0–1.0: 1=same item/spec, 0.5–0.9=same product different spec (size/set), 0=wrong product. When 2+ eBay listings have relevance=1, prioritize those heavily; same for non-eBay listings with relevance=1. Do NOT use listings with relevance<=0.3 when you have plenty of relevance>0.7 options. If NO listing has relevance above 0.7, return low value_confidence (e.g. 0.3–0.4).
-1. eBay is the primary comp source. Listed asking prices are typically 10–20% above what items actually sell for — account for this when estimating value.
+1. eBay is the primary comp source. Listed asking prices are typically 10–20% above what items actually sell for — account for this when estimating value. 
 2. StockX sold prices are the most reliable data available. If present, weight them heavily.
 3. Amazon and Google Shopping are retail CEILINGS — a used/secondhand item is worth less than new retail.
 4. Facebook prices have high variance and are often optimistic — weight them lightly.
-5. value_confidence: 0.0–1.0 based on data volume, consistency, and relevance. If NO listing has relevance above 0.7, set value_confidence to 0.4 or lower. High price variance or < 5 strong comps = lower confidence.
+5. value_confidence: 0.0–1.0 based on data volume, consistency, and relevance. If NO listing has relevance above 0.7, set value_confidence to 0.4 or lower. High price variance or < 2 strong comps = lower confidence. If we have strong comps from eBay, we can raise our confidence that our solution is correct.
 6. volume_score: 0.0–1.0 where 1.0 = 20+ strong comps, 0.0 = no comps.
 7. Recommendation thresholds (only apply if asking price was provided):
    - value_mid >= asking * ${thresholds.BUY_RATIO} → "buy" (great deal)
