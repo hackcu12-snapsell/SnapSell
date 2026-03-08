@@ -381,9 +381,11 @@ const CollectionItemPage = () => {
             <Table size="small" aria-label="listing references">
               <TableHead>
                 <TableRow>
-                  <TableCell>Listing</TableCell>
-                  <TableCell>Source</TableCell>
-                  <TableCell>Price</TableCell>
+                  <TableCell sx={{ width: "60%" }}>Listing</TableCell>
+                  <TableCell sx={{ width: "30%" }}>Source</TableCell>
+                  <TableCell sx={{ width: "20%" }} align="right">
+                    Price
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -397,7 +399,7 @@ const CollectionItemPage = () => {
                         </MuiLink>
                       </TableCell>
                       <TableCell>{getListingSource(listing.url)}</TableCell>
-                      <TableCell>
+                      <TableCell align="right">
                         {listing.price != null ? `$${Number(listing.price).toFixed(2)}` : "—"}
                       </TableCell>
                     </TableRow>
