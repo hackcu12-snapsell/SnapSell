@@ -167,7 +167,7 @@ export const RECOMMENDATION_THRESHOLDS = {
   BUY_RATIO: 1.15,     // value_mid >= 115% of sale_cost → BUY
   HAGGLE_LOW: 0.90,    // value_mid 90–115% of sale_cost → HAGGLE
   PASS_RATIO: 0.90,    // value_mid < 90% of sale_cost → PASS
-  // If sale_cost is null/0: recommendation = "insufficient_data" on ask comparison
-  // but value range is still appraised and shown.
-  MIN_CONFIDENCE_TO_RECOMMEND: 0.25,  // below this, force "insufficient_data"
+  // Only use "insufficient_data" when appraisal is truly bad: no comps or zero confidence.
+  // If we have any value_mid and confidence above this floor, we should suggest buy/haggle/pass.
+  MIN_CONFIDENCE_TO_RECOMMEND: 0.10,
 } as const;
