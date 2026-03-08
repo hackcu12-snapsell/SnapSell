@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-import { API_URL } from "../data/constants";
+import { API_URL, getItemImageUrl } from "../data/constants";
 import { basicAPI } from "../utils/utilsThisApp";
 
 import "../App.css";
@@ -140,14 +140,15 @@ const CollectionItemPage = () => {
           id: Number(raw.id),
           name: typeof raw.name === "string" ? raw.name : "Untitled item",
           status: (raw.status ?? "inventory") as ItemStatus,
-          imageUrl:
+          imageUrl: getItemImageUrl(
             typeof raw.imageUrl === "string"
               ? raw.imageUrl
               : typeof raw.image_url === "string"
                 ? raw.image_url
                 : typeof raw.image === "string"
                   ? raw.image
-                  : "",
+                  : ""
+          ),
           price:
             raw.price != null
               ? Number(raw.price)
