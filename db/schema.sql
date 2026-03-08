@@ -25,6 +25,9 @@ CREATE TABLE items (
     year INTEGER,
     status TEXT CHECK (status IN ('appraised', 'inventory', 'listed', 'sold')),
     sale_cost NUMERIC DEFAULT 0,
+    ebay_listing_url TEXT,
+    posted_date TIMESTAMP,
+    sold_date TIMESTAMP,
 
     CONSTRAINT fk_items_user
         FOREIGN KEY(userid)
@@ -73,7 +76,7 @@ CREATE INDEX idx_appraisals_item_id ON appraisals(item_id);
 -- LISTING REFERENCES TABLE
 CREATE TABLE listing_reference (
     id SERIAL PRIMARY KEY,
-    url TEXT NOT NULL,
+    url TEXT,
     source TEXT,
     price NUMERIC,
     appraisal_id INTEGER NOT NULL,

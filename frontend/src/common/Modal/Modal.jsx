@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Divider, Button } from "@mui/material";
 import { toggleModal } from "../../redux/actions/modalActions";
 
-const Modal = ({ modal_id, title, children, footerButtons, style }) => {
+const Modal = ({ modal_id, title, children, footerButtons, style, footerJustify }) => {
   const dispatch = useDispatch();
   const isOpen = useSelector(state => state.modalState[modal_id]);
 
@@ -45,12 +45,12 @@ const Modal = ({ modal_id, title, children, footerButtons, style }) => {
       <Divider sx={{ marginBottom: 1, borderColor: "rgba(255,255,255,0.12)" }} />
       <DialogActions
         sx={{
-          justifyContent: "flex-end",
+          justifyContent: footerJustify || "flex-end",
           flexShrink: 0,
           padding: "12px 16px"
         }}
       >
-        {(footerButtons ?? []).map(({ text, onClick, variant, disabled, primary }, index) => (
+        {(footerButtons ?? []).map(({ text, onClick, variant, disabled, primary, secondary }, index) => (
           <Button
             key={index}
             variant={variant}
@@ -66,6 +66,11 @@ const Modal = ({ modal_id, title, children, footerButtons, style }) => {
                 padding: "8px 24px",
                 "&:hover": { backgroundColor: "#fff" },
                 "&.Mui-disabled": { backgroundColor: "rgba(255,255,255,0.12)", color: "#555" }
+              }),
+              ...(secondary && {
+                border: "1px solid rgba(255,255,255,0.25)",
+                color: "#bbb",
+                "&:hover": { borderColor: "rgba(255,255,255,0.5)", color: "#fff" }
               }),
               ...(text === "Cancel" && {
                 backgroundColor: "#db584f",
