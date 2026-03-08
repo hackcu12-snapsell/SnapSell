@@ -1,4 +1,3 @@
-
 /** @module AppraisalModal */
 
 import React, { useEffect, useState, type CSSProperties } from "react";
@@ -25,10 +24,10 @@ type AppraisalValues = {
 };
 
 const DECISION_CONFIG: Record<Decision, { label: string; color: string; bg: string }> = {
-  buy:              { label: "Buy",              color: "#22c55e", bg: "rgba(34,197,94,0.13)"  },
-  pass:             { label: "Pass",             color: "#ef4444", bg: "rgba(239,68,68,0.13)"  },
-  haggle:           { label: "Haggle",           color: "#f59e0b", bg: "rgba(245,158,11,0.13)" },
-  not_enough_info:  { label: "Not Enough Info",  color: "#888",    bg: "rgba(136,136,136,0.1)" },
+  buy: { label: "Buy", color: "#22c55e", bg: "rgba(34,197,94,0.13)" },
+  pass: { label: "Pass", color: "#ef4444", bg: "rgba(239,68,68,0.13)" },
+  haggle: { label: "Haggle", color: "#f59e0b", bg: "rgba(245,158,11,0.13)" },
+  not_enough_info: { label: "Not Enough Info", color: "#888", bg: "rgba(136,136,136,0.1)" }
 };
 
 function decisionMessage(d: Decision, meanValue?: number): string {
@@ -273,24 +272,31 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
           {appr.value_reasoning && <p style={styles.reasoning}>{appr.value_reasoning}</p>}
 
           {/* ── Decision bar ── */}
-          {appr.decision && (() => {
-            const key = (appr.decision as string).toLowerCase() as Decision;
-            const cfg = DECISION_CONFIG[key] ?? DECISION_CONFIG.not_enough_info;
-            const msg = decisionMessage(key, appr.mean_value);
-            return (
-              <div style={{ ...styles.decisionBar, background: cfg.bg, borderColor: cfg.color + "44" }}>
-                <span style={{ ...styles.decisionLabel, color: cfg.color }}>{cfg.label}</span>
-                <span
-                  style={styles.decisionInfoWrap}
-                  onMouseEnter={() => setTooltipOpen(true)}
-                  onMouseLeave={() => setTooltipOpen(false)}
+          {appr.decision &&
+            (() => {
+              const key = (appr.decision as string).toLowerCase() as Decision;
+              const cfg = DECISION_CONFIG[key] ?? DECISION_CONFIG.not_enough_info;
+              const msg = decisionMessage(key, appr.mean_value);
+              return (
+                <div
+                  style={{
+                    ...styles.decisionBar,
+                    background: cfg.bg,
+                    borderColor: cfg.color + "44"
+                  }}
                 >
-                  <span style={styles.decisionInfoIcon}>ⓘ</span>
-                  {tooltipOpen && <span style={styles.decisionTooltip}>{msg}</span>}
-                </span>
-              </div>
-            );
-          })()}
+                  <span style={{ ...styles.decisionLabel, color: cfg.color }}>{cfg.label}</span>
+                  <span
+                    style={styles.decisionInfoWrap}
+                    onMouseEnter={() => setTooltipOpen(true)}
+                    onMouseLeave={() => setTooltipOpen(false)}
+                  >
+                    <span style={styles.decisionInfoIcon}>ⓘ</span>
+                    {tooltipOpen && <span style={styles.decisionTooltip}>{msg}</span>}
+                  </span>
+                </div>
+              );
+            })()}
         </>
       ) : (
         <p style={styles.noAppraisal}>Appraisal unavailable</p>

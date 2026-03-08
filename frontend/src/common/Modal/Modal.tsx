@@ -71,7 +71,8 @@ const Modal: React.FC<ModalProps> = ({ modal_id, title, children, footerButtons,
         sx={{
           justifyContent: "flex-end",
           flexShrink: 0,
-          padding: "12px 16px"
+          padding: "12px 16px",
+          paddingTop: "4px"
         }}
       >
         {(footerButtons ?? []).map(

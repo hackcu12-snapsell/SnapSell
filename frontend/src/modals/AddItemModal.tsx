@@ -327,277 +327,282 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
         <div style={{ position: "relative", height: "280px", overflow: "hidden" }}>
           <LoadingScreen contained backgroundColor="#1a1a1a" />
         </div>
-      ) : (<>
-
-      {/* Mode toggle — only visible on capture stage */}
-      {stage === "capture" && (
-        <div style={styles.toggleTrack}>
-          <div
-            style={{ ...styles.togglePill, left: mode === "photo" ? "4px" : "calc(50% + 0px)" }}
-          />
-          <button style={styles.toggleBtn} onClick={() => setMode("photo")}>
-            <span
-              style={{ position: "relative", zIndex: 1, color: mode === "photo" ? "#111" : "#aaa" }}
-            >
-              Photo
-            </span>
-          </button>
-          <button style={styles.toggleBtn} onClick={() => setMode("manual")}>
-            <span
-              style={{
-                position: "relative",
-                zIndex: 1,
-                color: mode === "manual" ? "#111" : "#aaa"
-              }}
-            >
-              Manual
-            </span>
-          </button>
-        </div>
-      )}
-
-      {/* ── CAPTURE STAGE ── */}
-      {stage === "capture" && mode === "photo" && (
+      ) : (
         <>
-          <div style={styles.viewfinder}>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              style={{ ...styles.viewfinderMedia, display: cameraActive ? "block" : "none" }}
-            />
-            {preview && !cameraActive && (
-              <img src={preview} alt="preview" style={styles.viewfinderMedia} />
-            )}
-            {!cameraActive && !preview && cameraError && (
-              <span style={styles.viewfinderPlaceholder}>{cameraError}</span>
-            )}
-            {cameraActive && (
-              <button style={styles.shutterBtn} onClick={capturePhoto} aria-label="Capture" />
-            )}
-            {preview && !cameraActive && (
-              <button style={styles.retakeBtn} onClick={resetCapture}>
-                Retake
+          {/* Mode toggle — only visible on capture stage */}
+          {stage === "capture" && (
+            <div style={styles.toggleTrack}>
+              <div
+                style={{ ...styles.togglePill, left: mode === "photo" ? "4px" : "calc(50% + 0px)" }}
+              />
+              <button style={styles.toggleBtn} onClick={() => setMode("photo")}>
+                <span
+                  style={{
+                    position: "relative",
+                    zIndex: 1,
+                    color: mode === "photo" ? "#111" : "#aaa"
+                  }}
+                >
+                  Photo
+                </span>
               </button>
-            )}
-          </div>
-          <canvas ref={canvasRef} style={{ display: "none" }} />
-
-          <div style={styles.uploadRow}>
-            <button style={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
-              Upload Photo
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              onChange={handleUpload}
-            />
-          </div>
-
-          <label style={styles.fieldLabel}>
-            Description
-            <textarea
-              rows={2}
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Any extra details about the item..."
-              style={styles.textarea}
-            />
-          </label>
-
-          <label style={styles.fieldLabel}>
-            List Price ($)
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={listPrice}
-              onChange={e => setListPrice(e.target.value)}
-              placeholder="0.00"
-              style={styles.input}
-            />
-          </label>
-        </>
-      )}
-
-      {stage === "capture" && mode === "manual" && (
-        <>
-          <label style={styles.fieldLabel}>
-            Name <span style={styles.required}>*</span>
-            <input
-              value={fields.name}
-              onChange={setField("name")}
-              placeholder="Item name"
-              style={{ ...styles.input, ...(fields.name.trim() ? {} : styles.inputError) }}
-            />
-          </label>
-
-          <label style={styles.fieldLabel}>
-            Description
-            <textarea
-              rows={2}
-              value={fields.description}
-              onChange={setField("description")}
-              placeholder="Any extra details about the item..."
-              style={styles.textarea}
-            />
-          </label>
-
-          <label style={styles.fieldLabel}>
-            Category
-            <input
-              value={fields.category}
-              onChange={setField("category")}
-              placeholder="e.g. Electronics"
-              style={styles.input}
-            />
-          </label>
-
-          <label style={styles.fieldLabel}>
-            Brand
-            <input
-              value={fields.brand}
-              onChange={setField("brand")}
-              placeholder="Brand or manufacturer"
-              style={styles.input}
-            />
-          </label>
-
-          <div style={styles.twoCol}>
-            <label style={styles.fieldLabel}>
-              Year
-              <input
-                value={fields.year}
-                onChange={setField("year")}
-                placeholder="e.g. 2019"
-                style={styles.input}
-              />
-            </label>
-            <label style={styles.fieldLabel}>
-              Purchase Price ($)
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={purchasePrice}
-                onChange={e => setPurchasePrice(e.target.value)}
-                placeholder="0.00"
-                style={styles.input}
-              />
-            </label>
-          </div>
-
-          <label style={styles.fieldLabel}>
-            Condition
-            <select
-              value={condition || "Good"}
-              onChange={e => setCondition(e.target.value)}
-              style={styles.select}
-            >
-              {CONDITIONS.map(c => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {saveError && (
-            <p style={styles.saveError}>{saveError}</p>
-          )}
-        </>
-      )}
-
-      {/* ── REVIEW STAGE ── */}
-      {stage === "review" && (
-        <>
-          {preview && (
-            <div style={styles.reviewPreviewRow}>
-              <img src={preview} alt="item" style={styles.reviewPreview} />
-              {condition && <span style={styles.conditionBadge}>{condition}</span>}
+              <button style={styles.toggleBtn} onClick={() => setMode("manual")}>
+                <span
+                  style={{
+                    position: "relative",
+                    zIndex: 1,
+                    color: mode === "manual" ? "#111" : "#aaa"
+                  }}
+                >
+                  Manual
+                </span>
+              </button>
             </div>
           )}
 
-          <label style={styles.fieldLabel}>
-            Name <span style={styles.required}>*</span>
-            <input
-              value={fields.name}
-              onChange={setField("name")}
-              placeholder="Item name"
-              style={{ ...styles.input, ...(fields.name.trim() ? {} : styles.inputError) }}
-            />
-          </label>
+          {/* ── CAPTURE STAGE ── */}
+          {stage === "capture" && mode === "photo" && (
+            <>
+              <div style={styles.viewfinder}>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  style={{ ...styles.viewfinderMedia, display: cameraActive ? "block" : "none" }}
+                />
+                {preview && !cameraActive && (
+                  <img src={preview} alt="preview" style={styles.viewfinderMedia} />
+                )}
+                {!cameraActive && !preview && cameraError && (
+                  <span style={styles.viewfinderPlaceholder}>{cameraError}</span>
+                )}
+                {cameraActive && (
+                  <button style={styles.shutterBtn} onClick={capturePhoto} aria-label="Capture" />
+                )}
+                {preview && !cameraActive && (
+                  <button style={styles.retakeBtn} onClick={resetCapture}>
+                    Retake
+                  </button>
+                )}
+              </div>
+              <canvas ref={canvasRef} style={{ display: "none" }} />
 
-          <label style={styles.fieldLabel}>
-            Description
-            <textarea
-              rows={3}
-              value={fields.description}
-              onChange={setField("description")}
-              placeholder="Description"
-              style={styles.textarea}
-            />
-          </label>
+              <div style={styles.uploadRow}>
+                <button style={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
+                  Upload Photo
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={handleUpload}
+                />
+              </div>
 
-          <div style={styles.twoCol}>
-            <label style={styles.fieldLabel}>
-              Category
-              <input
-                value={fields.category}
-                onChange={setField("category")}
-                placeholder="e.g. Electronics"
-                style={styles.input}
-              />
-            </label>
-            <label style={styles.fieldLabel}>
-              Year
-              <input
-                value={fields.year}
-                onChange={setField("year")}
-                placeholder="e.g. 2019"
-                style={styles.input}
-              />
-            </label>
-          </div>
+              <label style={styles.fieldLabel}>
+                Description
+                <textarea
+                  rows={2}
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  placeholder="Any extra details about the item..."
+                  style={styles.textarea}
+                />
+              </label>
 
-          <label style={styles.fieldLabel}>
-            Brand
-            <input
-              value={fields.brand}
-              onChange={setField("brand")}
-              placeholder="Brand or manufacturer"
-              style={styles.input}
-            />
-          </label>
+              <label style={styles.fieldLabel}>
+                List Price ($)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={listPrice}
+                  onChange={e => setListPrice(e.target.value)}
+                  placeholder="0.00"
+                  style={styles.input}
+                />
+              </label>
+            </>
+          )}
 
-          <label style={styles.fieldLabel}>
-            Condition
-            <input
-              value={condition}
-              onChange={e => setCondition(e.target.value)}
-              placeholder="e.g. Good, Like New, Fair"
-              style={styles.input}
-            />
-          </label>
+          {stage === "capture" && mode === "manual" && (
+            <>
+              <label style={styles.fieldLabel}>
+                <span>
+                  Name <span style={styles.required}>*</span>
+                </span>
+                <input
+                  value={fields.name}
+                  onChange={setField("name")}
+                  placeholder="Item name"
+                  style={{ ...styles.input, ...(fields.name.trim() ? {} : styles.inputError) }}
+                />
+              </label>
 
-          <label style={styles.fieldLabel}>
-            List Price ($)
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={listPrice}
-              onChange={e => setListPrice(e.target.value)}
-              placeholder="0.00"
-              style={styles.input}
-            />
-          </label>
+              <label style={styles.fieldLabel}>
+                Description
+                <textarea
+                  rows={2}
+                  value={fields.description}
+                  onChange={setField("description")}
+                  placeholder="Any extra details about the item..."
+                  style={styles.textarea}
+                />
+              </label>
+
+              <label style={styles.fieldLabel}>
+                Category
+                <input
+                  value={fields.category}
+                  onChange={setField("category")}
+                  placeholder="e.g. Electronics"
+                  style={styles.input}
+                />
+              </label>
+
+              <label style={styles.fieldLabel}>
+                Brand
+                <input
+                  value={fields.brand}
+                  onChange={setField("brand")}
+                  placeholder="Brand or manufacturer"
+                  style={styles.input}
+                />
+              </label>
+
+              <div style={styles.twoCol}>
+                <label style={styles.fieldLabel}>
+                  Year
+                  <input
+                    value={fields.year}
+                    onChange={setField("year")}
+                    placeholder="e.g. 2019"
+                    style={styles.input}
+                  />
+                </label>
+                <label style={styles.fieldLabel}>
+                  Purchase Price ($)
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={purchasePrice}
+                    onChange={e => setPurchasePrice(e.target.value)}
+                    placeholder="0.00"
+                    style={styles.input}
+                  />
+                </label>
+              </div>
+
+              <label style={styles.fieldLabel}>
+                Condition
+                <select
+                  value={condition || "Good"}
+                  onChange={e => setCondition(e.target.value)}
+                  style={styles.select}
+                >
+                  {CONDITIONS.map(c => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {saveError && <p style={styles.saveError}>{saveError}</p>}
+            </>
+          )}
+
+          {/* ── REVIEW STAGE ── */}
+          {stage === "review" && (
+            <>
+              {preview && (
+                <div style={styles.reviewPreviewRow}>
+                  <img src={preview} alt="item" style={styles.reviewPreview} />
+                  {condition && <span style={styles.conditionBadge}>{condition}</span>}
+                </div>
+              )}
+
+              <label style={styles.fieldLabel}>
+                Name <span style={styles.required}>*</span>
+                <input
+                  value={fields.name}
+                  onChange={setField("name")}
+                  placeholder="Item name"
+                  style={{ ...styles.input, ...(fields.name.trim() ? {} : styles.inputError) }}
+                />
+              </label>
+
+              <label style={styles.fieldLabel}>
+                Description
+                <textarea
+                  rows={3}
+                  value={fields.description}
+                  onChange={setField("description")}
+                  placeholder="Description"
+                  style={styles.textarea}
+                />
+              </label>
+
+              <div style={styles.twoCol}>
+                <label style={styles.fieldLabel}>
+                  Category
+                  <input
+                    value={fields.category}
+                    onChange={setField("category")}
+                    placeholder="e.g. Electronics"
+                    style={styles.input}
+                  />
+                </label>
+                <label style={styles.fieldLabel}>
+                  Year
+                  <input
+                    value={fields.year}
+                    onChange={setField("year")}
+                    placeholder="e.g. 2019"
+                    style={styles.input}
+                  />
+                </label>
+              </div>
+
+              <label style={styles.fieldLabel}>
+                Brand
+                <input
+                  value={fields.brand}
+                  onChange={setField("brand")}
+                  placeholder="Brand or manufacturer"
+                  style={styles.input}
+                />
+              </label>
+
+              <label style={styles.fieldLabel}>
+                Condition
+                <input
+                  value={condition}
+                  onChange={e => setCondition(e.target.value)}
+                  placeholder="e.g. Good, Like New, Fair"
+                  style={styles.input}
+                />
+              </label>
+
+              <label style={styles.fieldLabel}>
+                List Price ($)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={listPrice}
+                  onChange={e => setListPrice(e.target.value)}
+                  placeholder="0.00"
+                  style={styles.input}
+                />
+              </label>
+            </>
+          )}
         </>
       )}
-      </>)}
     </Modal>
   );
 };
@@ -626,6 +631,7 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid rgba(255,255,255,0.15)",
     borderRadius: "8px",
     padding: "4px",
+    marginTop: "14px",
     marginBottom: "14px"
   },
   togglePill: {
