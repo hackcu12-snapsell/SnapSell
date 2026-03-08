@@ -304,8 +304,12 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
       style={{ maxWidth: "390px", width: "100%" }}
       footerButtons={footerButtons}
     >
-      <div style={{ position: "relative", minHeight: isLoading ? "300px" : undefined }}>
-      {isLoading && <LoadingScreen contained backgroundColor="#1a1a1a" />}
+      {isLoading ? (
+        /* Fixed-size box so the modal never grows/shrinks during animation */
+        <div style={{ position: "relative", height: "280px", overflow: "hidden" }}>
+          <LoadingScreen contained backgroundColor="#1a1a1a" />
+        </div>
+      ) : (<>
 
       {/* Mode toggle — only visible on capture stage */}
       {stage === "capture" && (
@@ -387,13 +391,13 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
           </label>
 
           <label style={styles.fieldLabel}>
-            Purchase Price ($)
+            List Price ($)
             <input
               type="number"
               min="0"
               step="0.01"
-              value={purchasePrice}
-              onChange={e => setPurchasePrice(e.target.value)}
+              value={listPrice}
+              onChange={e => setListPrice(e.target.value)}
               placeholder="0.00"
               style={styles.input}
             />
@@ -406,7 +410,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
       )}
 
       {/* ── REVIEW STAGE ── */}
-      {(stage === "review" || stage === "saving") && (
+      {stage === "review" && (
         <>
           {preview && (
             <div style={styles.reviewPreviewRow}>
@@ -491,7 +495,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
           </label>
         </>
       )}
-      </div>
+      </>)}
     </Modal>
   );
 };
