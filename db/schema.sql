@@ -30,6 +30,7 @@ CREATE TABLE items (
     ebay_listing_url TEXT,
     posted_date TIMESTAMP,
     sold_date TIMESTAMP,
+    last_price_change_date TIMESTAMP,
 
     CONSTRAINT fk_items_user
         FOREIGN KEY(userid)
