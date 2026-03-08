@@ -33,6 +33,9 @@ type Item = {
   status: ItemStatus;
   imageUrl: string;
   price?: number | null;
+  listingPrice?: number | null;
+  postedDate?: string | null;
+  ebayListingUrl?: string | null;
   createdAt?: string | null;
   description?: string | null;
   brand?: string | null;
@@ -228,11 +231,12 @@ const CollectionItemPage = () => {
                   : ""
           ),
           price:
-            raw.price != null
-              ? Number(raw.price)
-              : raw.estimated_price != null
-                ? Number(raw.estimated_price)
-                : null,
+            raw.listing_price != null
+              ? Number(raw.listing_price)
+              : null,
+          listingPrice: raw.listing_price != null ? Number(raw.listing_price) : null,
+          postedDate: typeof raw.posted_date === "string" ? raw.posted_date : null,
+          ebayListingUrl: typeof raw.ebay_listing_url === "string" ? raw.ebay_listing_url : null,
           createdAt:
             typeof raw.created_at === "string"
               ? raw.created_at
@@ -269,7 +273,9 @@ const CollectionItemPage = () => {
   };
 
   const handleViewListing = () => {
-    // TODO
+    if (item?.ebayListingUrl) {
+      window.open(item.ebayListingUrl, "_blank", "noopener,noreferrer");
+    }
   };
 
   if (loading) {
@@ -362,14 +368,35 @@ const CollectionItemPage = () => {
 
           <dt>Age</dt>
           <dd>{item.year != null ? item.year : "—"}</dd>
+
+          {item.status === "listed" && (
+            <>
+              <dt>Listed On</dt>
+              <dd>
+                {item.postedDate
+                  ? new Date(item.postedDate).toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric"
+                    })
+                  : "—"}
+              </dd>
+            </>
+          )}
         </dl>
 
         <div className="collection-item-appraisal">
-          <span className="collection-item-appraisal-label">Estimated Value:</span>
+          <span className="collection-item-appraisal-label">
+            {item.status === "listed" ? "Listing Price:" : "Estimated Value:"}
+          </span>
           <span className="collection-item-appraisal-value">
-            {item.meanValue != null && !Number.isNaN(item.meanValue)
-              ? `$${Number(item.meanValue).toFixed(2)}`
-              : "—"}
+            {item.status === "listed"
+              ? item.listingPrice != null && !Number.isNaN(item.listingPrice)
+                ? `$${Number(item.listingPrice).toFixed(2)}`
+                : "—"
+              : item.meanValue != null && !Number.isNaN(item.meanValue)
+                ? `$${Number(item.meanValue).toFixed(2)}`
+                : "—"}
           </span>
         </div>
       </div>
