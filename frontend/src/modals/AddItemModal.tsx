@@ -68,6 +68,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
   const [preview, setPreview] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
+  const [listPrice, setListPrice] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
@@ -158,6 +159,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
     setCameraError(null);
     setDescription("");
     setPurchasePrice("");
+    setListPrice("");
     setStage("capture");
     setFields(EMPTY_FIELDS);
     setCondition("");
@@ -209,6 +211,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
     body.append("brand", (saveFields.brand || "").trim());
     body.append("year", (saveFields.year || "").toString().trim());
     body.append("purchase_price", purchasePrice || "0");
+    body.append("list_price", listPrice || "0");
     body.append("condition", condition || "Good");
 
     try {
@@ -466,13 +469,13 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
           </label>
 
           <label style={styles.fieldLabel}>
-            Purchase Price ($)
+            List Price ($)
             <input
               type="number"
               min="0"
               step="0.01"
-              value={purchasePrice}
-              onChange={e => setPurchasePrice(e.target.value)}
+              value={listPrice}
+              onChange={e => setListPrice(e.target.value)}
               placeholder="0.00"
               style={styles.input}
             />
