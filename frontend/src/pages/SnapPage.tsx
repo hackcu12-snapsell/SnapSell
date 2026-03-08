@@ -30,11 +30,15 @@ type Stats = {
 };
 
 const EMPTY_STATS: Stats = {
-  inventory: 0, listed: 0, sold: 0,
-  portfolioValue: 0, revenue: 0,
-  staleListed: 0, readyToList: 0,
+  inventory: 0,
+  listed: 0,
+  sold: 0,
+  portfolioValue: 0,
+  revenue: 0,
+  staleListed: 0,
+  readyToList: 0,
   sellThroughRate: 0,
-  topCategories: [],
+  topCategories: []
 };
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
@@ -87,10 +91,18 @@ const SnapPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const loginResult = useAppSelector(state => state.userState.loginResult);
-  const tokenFromStore = (loginResult as Record<string, unknown> | null)?.token as string | undefined;
-  const token = tokenFromStore || (() => {
-    try { return JSON.parse(localStorage.getItem("user") || "{}").token; } catch { return null; }
-  })();
+  const tokenFromStore = (loginResult as Record<string, unknown> | null)?.token as
+    | string
+    | undefined;
+  const token =
+    tokenFromStore ||
+    (() => {
+      try {
+        return JSON.parse(localStorage.getItem("user") || "{}").token;
+      } catch {
+        return null;
+      }
+    })();
   const username = (loginResult as Record<string, unknown> | null)?.username as string | undefined;
 
   const [stats, setStats] = useState<Stats>(EMPTY_STATS);
@@ -113,7 +125,10 @@ const SnapPage = () => {
         setStats(computeStats(raw));
         setLoaded(true);
       })
-      .catch(err => { console.error("[SnapPage] items fetch failed:", err); setLoaded(true); });
+      .catch(err => {
+        console.error("[SnapPage] items fetch failed:", err);
+        setLoaded(true);
+      });
   }, [token]);
 
   const fmtVal = (n: number) =>
@@ -123,7 +138,6 @@ const SnapPage = () => {
 
   return (
     <div style={s.page}>
-
       {/* ── Hero ── */}
       <div style={s.hero}>
         <p style={s.eyebrow}>{username ? `Hey, ${username}.` : "Welcome back."}</p>
@@ -148,7 +162,6 @@ const SnapPage = () => {
         <div style={s.section}>
           <p style={s.sectionLabel}>Insights</p>
           <div style={s.insightGrid}>
-
             {/* Sell-through rate */}
             <div className="landing-card" style={s.insightCard}>
               <div style={s.insightHeader}>
@@ -169,21 +182,9 @@ const SnapPage = () => {
                 <span style={s.insightTitle}>Inventory health</span>
               </div>
               <div style={s.healthRow}>
-                <HealthStat
-                  value={stats.readyToList}
-                  label="appraised"
-                  color="#4ade80"
-                />
-                <HealthStat
-                  value={stats.staleListed}
-                  label="stale (2wk+)"
-                  color="#f59e0b"
-                />
-                <HealthStat
-                  value={stats.listed}
-                  label="live on eBay"
-                  color="#60a5fa"
-                />
+                <HealthStat value={stats.readyToList} label="appraised" color="#4ade80" />
+                <HealthStat value={stats.staleListed} label="stale (2wk+)" color="#f59e0b" />
+                <HealthStat value={stats.listed} label="live on eBay" color="#60a5fa" />
               </div>
             </div>
 
@@ -201,7 +202,6 @@ const SnapPage = () => {
                 </div>
               </div>
             )}
-
           </div>
         </div>
       )}
@@ -209,16 +209,27 @@ const SnapPage = () => {
       {/* ── Inventory CTA ── */}
       <div style={s.section}>
         <p style={s.sectionLabel}>Your Inventory</p>
-        <button className="btn-secondary" style={s.inventoryBtn} onClick={() => navigate("/collection")}>
+        <button
+          className="btn-secondary"
+          style={s.inventoryBtn}
+          onClick={() => navigate("/collection")}
+        >
           View all items →
         </button>
       </div>
-
     </div>
   );
 };
 
-const StatCard = ({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) => (
+const StatCard = ({
+  label,
+  value,
+  highlight
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) => (
   <div style={{ ...s.statCard, ...(highlight ? s.statHighlight : {}) }}>
     <div style={{ ...s.statValue, ...(highlight ? s.statValueHighlight : {}) }}>{value}</div>
     <div style={s.statLabel}>{label}</div>
@@ -236,15 +247,14 @@ const s: Record<string, CSSProperties> = {
   page: {
     maxWidth: "680px",
     margin: "0 auto",
-    padding: "48px 24px 80px",
     display: "flex",
     flexDirection: "column",
-    gap: "44px",
+    gap: "44px"
   },
   hero: {
     display: "flex",
     flexDirection: "column",
-    gap: "10px",
+    gap: "10px"
   },
   eyebrow: { fontSize: "0.85rem", color: "#666", margin: 0 },
   headline: {
@@ -252,7 +262,7 @@ const s: Record<string, CSSProperties> = {
     fontWeight: 700,
     color: "#fff",
     margin: 0,
-    lineHeight: 1.2,
+    lineHeight: 1.2
   },
   snapBtn: {
     marginTop: "6px",
@@ -268,7 +278,7 @@ const s: Record<string, CSSProperties> = {
     fontSize: "1rem",
     fontWeight: 700,
     cursor: "pointer",
-    fontFamily: "inherit",
+    fontFamily: "inherit"
   },
   plus: { fontSize: "1.3rem", fontWeight: 300, lineHeight: 1 },
 
@@ -276,32 +286,32 @@ const s: Record<string, CSSProperties> = {
   statsRow: {
     display: "grid",
     gridTemplateColumns: "repeat(5, 1fr)",
-    gap: "10px",
+    gap: "10px"
   },
   statCard: {
     background: "rgba(255,255,255,0.05)",
     border: "1px solid rgba(255,255,255,0.08)",
     borderRadius: "10px",
     padding: "14px 10px",
-    textAlign: "center",
+    textAlign: "center"
   },
   statHighlight: {
     background: "rgba(255,255,255,0.1)",
-    border: "1px solid rgba(255,255,255,0.18)",
+    border: "1px solid rgba(255,255,255,0.18)"
   },
   statValue: {
     fontSize: "1.35rem",
     fontWeight: 700,
     color: "#bbb",
     lineHeight: 1,
-    marginBottom: "5px",
+    marginBottom: "5px"
   },
   statValueHighlight: { color: "#fff", fontSize: "1.5rem" },
   statLabel: {
     fontSize: "0.68rem",
     color: "#555",
     textTransform: "uppercase" as CSSProperties["textTransform"],
-    letterSpacing: "0.07em",
+    letterSpacing: "0.07em"
   },
 
   // sections
@@ -311,25 +321,25 @@ const s: Record<string, CSSProperties> = {
     color: "#555",
     textTransform: "uppercase" as CSSProperties["textTransform"],
     letterSpacing: "0.1em",
-    margin: 0,
+    margin: 0
   },
 
   // insights
   insightGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-    gap: "12px",
+    gap: "12px"
   },
   insightCard: {
     // background/border/borderRadius/padding come from .landing-card
     display: "flex",
     flexDirection: "column",
-    gap: "10px",
+    gap: "10px"
   },
   insightHeader: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "baseline",
+    alignItems: "baseline"
   },
   insightTitle: { fontSize: "0.82rem", color: "#888" },
   insightBig: { fontSize: "1.6rem", fontWeight: 700, color: "#fff" },
@@ -339,14 +349,14 @@ const s: Record<string, CSSProperties> = {
     height: "4px",
     background: "rgba(255,255,255,0.08)",
     borderRadius: "2px",
-    overflow: "hidden",
+    overflow: "hidden"
   },
   barFill: {
     height: "100%",
     background: "#4ade80",
     borderRadius: "2px",
     transition: "width 0.6s ease",
-    minWidth: "2px",
+    minWidth: "2px"
   },
 
   healthRow: { display: "flex", gap: "16px" },
@@ -358,7 +368,7 @@ const s: Record<string, CSSProperties> = {
   catRow: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "center"
   },
   catName: { fontSize: "0.85rem", color: "#bbb" },
   catCount: {
@@ -366,14 +376,14 @@ const s: Record<string, CSSProperties> = {
     color: "#555",
     background: "rgba(255,255,255,0.06)",
     borderRadius: "4px",
-    padding: "1px 7px",
+    padding: "1px 7px"
   },
 
   inventoryBtn: {
     // base styles come from .btn-secondary
     flex: "unset",
-    alignSelf: "flex-start" as CSSProperties["alignSelf"],
-  },
+    alignSelf: "flex-start" as CSSProperties["alignSelf"]
+  }
 };
 
 export default SnapPage;
