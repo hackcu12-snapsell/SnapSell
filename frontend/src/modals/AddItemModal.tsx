@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useAppSelector } from "../redux/hooks";
 import Modal from "../common/Modal/Modal";
+import LoadingScreen from "../common/LoadingScreen";
 
 const MODAL_ID = "addItemModal";
 
@@ -69,6 +70,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
   const [preview, setPreview] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
+  const [listPrice, setListPrice] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
@@ -159,6 +161,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
     setCameraError(null);
     setDescription("");
     setPurchasePrice("");
+    setListPrice("");
     setStage("capture");
     setFields(EMPTY_FIELDS);
     setCondition("");
@@ -211,6 +214,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
     body.append("brand", (saveFields.brand || "").trim());
     body.append("year", (saveFields.year || "").toString().trim());
     body.append("purchase_price", purchasePrice || "0");
+    body.append("list_price", listPrice || "0");
     body.append("condition", condition || "Good");
 
     try {
@@ -285,6 +289,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
     </div>
   );
 
+  const isLoading = analyzing || stage === "saving";
+
   return (
     <Modal
       modal_id={MODAL_ID}
@@ -292,6 +298,9 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
       style={{ maxWidth: "390px", width: "100%" }}
       footerButtons={footerButtons}
     >
+      <div style={{ position: "relative", minHeight: isLoading ? "300px" : undefined }}>
+      {isLoading && <LoadingScreen contained backgroundColor="#1a1a1a" />}
+
       {/* Mode toggle — only visible on capture stage */}
       {stage === "capture" && (
         <div style={styles.toggleTrack}>
@@ -455,14 +464,28 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
           <label style={styles.fieldLabel}>
             Condition
             <input
-              value={fields.condition}
-              onChange={setField("condition")}
-              placeholder="e.g. Excellent, Good, Fair"
+              value={condition}
+              onChange={e => setCondition(e.target.value)}
+              placeholder="e.g. Good, Like New, Fair"
+              style={styles.input}
+            />
+          </label>
+
+          <label style={styles.fieldLabel}>
+            List Price ($)
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={listPrice}
+              onChange={e => setListPrice(e.target.value)}
+              placeholder="0.00"
               style={styles.input}
             />
           </label>
         </>
       )}
+      </div>
     </Modal>
   );
 };
