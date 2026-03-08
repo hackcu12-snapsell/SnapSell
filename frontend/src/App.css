@@ -293,9 +293,65 @@ pre {
 .collection-section-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 3rem;
+  margin-bottom: 1.25rem;
   padding-top: 1rem;
+}
+
+.collection-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: #fff;
+  font-size: 1.45rem;
+  font-weight: 600;
+}
+
+.collection-section-toggle:hover {
+  opacity: 0.85;
+}
+
+.collection-section-chevron {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.collection-section-title {
+  margin: 0;
+  font-size: 1.85rem;
+}
+
+.collection-section-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.collection-sort-button,
+.collection-sort-direction {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.collection-sort-button:hover,
+.collection-sort-direction:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.collection-sort-direction {
+  width: 2.2rem;
+  display: grid;
+  place-items: center;
 }
 
 .collection-sort-select {
@@ -382,4 +438,3 @@ pre {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-

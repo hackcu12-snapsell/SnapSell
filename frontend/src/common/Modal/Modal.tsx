@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /** @module Modal.tsx */
 
 import React from "react";
-import { useSelector, useDispatch } from "react-redux";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Divider, Button } from "@mui/material";
 import { toggleModal } from "../../redux/actions/modalActions";
+import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 
 export type ModalButtonVariant = "text" | "outlined" | "contained";
 
@@ -24,19 +22,11 @@ export interface ModalProps {
   children?: React.ReactNode;
   footerButtons?: ModalFooterButton[];
   style?: React.CSSProperties;
-  footerJustify?: React.CSSProperties["justifyContent"];
 }
 
-const Modal: React.FC<ModalProps> = ({
-  modal_id,
-  title,
-  children,
-  footerButtons,
-  style,
-  footerJustify
-}) => {
-  const dispatch = useDispatch();
-  const isOpen = useSelector((state: any) => state.modalState?.[modal_id]);
+const Modal: React.FC<ModalProps> = ({ modal_id, title, children, footerButtons, style }) => {
+  const dispatch = useAppDispatch();
+  const isOpen = useAppSelector(state => Boolean(state.modalState?.[modal_id]));
 
   const handleClose = () => {
     dispatch(toggleModal(modal_id));
@@ -79,7 +69,7 @@ const Modal: React.FC<ModalProps> = ({
 
       <DialogActions
         sx={{
-          justifyContent: footerJustify || "flex-end",
+          justifyContent: "flex-end",
           flexShrink: 0,
           padding: "12px 16px"
         }}

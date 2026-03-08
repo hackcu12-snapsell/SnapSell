@@ -1,19 +1,49 @@
 /** @module AppraisalModal */
 
-import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import React, { useEffect, useState, type CSSProperties } from "react";
+import { useAppSelector } from "../redux/hooks";
 import Modal from "../common/Modal/Modal";
 
 const MODAL_ID = "appraisalModal";
 
-const CONDITIONS = ["New", "Like New", "Good", "Fair", "Poor"];
+const CONDITIONS = ["New", "Like New", "Good", "Fair", "Poor"] as const;
 
-const fmt = val => (val != null ? `$${Number(val).toFixed(0)}` : "—");
-const pct = val => (val != null ? `${Math.round(val * 100)}%` : "—");
+type Condition = (typeof CONDITIONS)[number];
 
-const AppraisalModal = ({ handleClose, data }) => {
-  const isOpen = useSelector(state => state.modalState[MODAL_ID]);
-  const tokenFromStore = useSelector(state => state.userState.loginResult?.token);
+type AppraisalValues = {
+  lowest_value?: number;
+  mean_value?: number;
+  high_value?: number;
+  value_confidence?: number;
+  volume?: number;
+  value_reasoning?: string;
+};
+
+type AppraisalData = {
+  item_id?: number;
+  preview?: string;
+  image_url?: string;
+  condition?: string;
+  item?: {
+    name?: string;
+    description?: string;
+    brand?: string;
+  };
+  appraisal?: AppraisalValues;
+};
+
+type AppraisalModalProps = {
+  handleClose: (modalId: string) => void;
+  data?: AppraisalData | null;
+};
+
+const fmt = (val: unknown) => (val != null && typeof val === "number" ? `$${val.toFixed(0)}` : "—");
+const pct = (val: unknown) =>
+  val != null && typeof val === "number" ? `${Math.round(val * 100)}%` : "—";
+
+const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) => {
+  const isOpen = useAppSelector(state => Boolean(state.modalState[MODAL_ID]));
+  const tokenFromStore = useAppSelector(state => state.userState.loginResult?.token);
   const token =
     tokenFromStore ||
     (() => {
@@ -24,23 +54,28 @@ const AppraisalModal = ({ handleClose, data }) => {
       }
     })();
 
-  const [title, setTitle]             = useState("");
-  const [desc, setDesc]               = useState("");
-  const [price, setPrice]             = useState("");
-  const [condition, setCondition]     = useState("Good");
-  const [posting, setPosting]         = useState(false);
-  const [error, setError]             = useState(null);
+  const [title, setTitle] = useState("");
+  const [desc, setDesc] = useState("");
+  const [price, setPrice] = useState("");
+  const [condition, setCondition] = useState<Condition>("Good");
+  const [posting, setPosting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // Missing item specifics required by eBay
-  const [missingSpecifics, setMissingSpecifics] = useState([]);
-  const [specificValues, setSpecificValues]     = useState({});
+  const [missingSpecifics, setMissingSpecifics] = useState<string[]>([]);
+  const [specificValues, setSpecificValues] = useState<Record<string, string>>({});
 
-  // Populate fields when modal opens with new data
   useEffect(() => {
     if (isOpen && data) {
-      setTitle(data.item?.name || "");
-      setDesc(data.item?.description || "");
-      setPrice(data.appraisal?.mean_value ? String(Math.round(data.appraisal.mean_value)) : "");
-      setCondition(data.condition || "Good");
+      // TODO: thinking that we should be using redux or forms for this stuff
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTitle(data.item?.name ?? "");
+      setDesc(data.item?.description ?? "");
+      setPrice(
+        typeof data.appraisal?.mean_value === "number"
+          ? String(Math.round(data.appraisal.mean_value))
+          : ""
+      );
+      setCondition((data.condition as Condition) ?? "Good");
       setError(null);
       setPosting(false);
       setMissingSpecifics([]);
@@ -51,18 +86,18 @@ const AppraisalModal = ({ handleClose, data }) => {
   const close = () => handleClose(MODAL_ID);
   const handleKeep = () => close();
 
-  const setSpecific = key => e =>
+  const setSpecific = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setSpecificValues(v => ({ ...v, [key]: e.target.value }));
 
   // Pre-fill known specifics from item data
-  const buildSpecifics = () => {
-    const out = { ...specificValues };
+  const buildSpecifics = (): Record<string, string> => {
+    const out: Record<string, string> = { ...specificValues };
     if (data?.item?.brand && !out["Brand"]) out["Brand"] = data.item.brand;
     return out;
   };
 
   const handlePost = async () => {
-    if (!price || !title) return;
+    if (!price.trim() || !title.trim()) return;
     setPosting(true);
     setError(null);
     const specifics = buildSpecifics();
@@ -73,36 +108,42 @@ const AppraisalModal = ({ handleClose, data }) => {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          item_id:        data.item_id,
+          item_id: data?.item_id,
           title,
-          description:    desc,
-          price:          parseFloat(price),
+          description: desc,
+          price: parseFloat(price),
           condition,
-          item_specifics: specifics,
-        }),
+          item_specifics: specifics
+        })
       });
-      const result = await res.json();
 
-      if (res.status === 409 && result.missing_specifics?.length) {
-        // eBay requires more fields — show inputs pre-filled with what we know
+      const result = (await res.json()) as Record<string, unknown>;
+
+      const missing = result.missing_specifics;
+
+      if (res.status === 409 && Array.isArray(missing) && missing.length > 0) {
         const known = buildSpecifics();
-        const initial = {};
-        result.missing_specifics.forEach(f => { initial[f] = known[f] || ""; });
+        const initial: Record<string, string> = {};
+
+        missing.forEach(f => {
+          initial[f] = known[f] || "";
+        });
+
         setSpecificValues(initial);
-        setMissingSpecifics(result.missing_specifics);
+        setMissingSpecifics(missing);
         setPosting(false);
         return;
       }
 
       if (!res.ok) {
-        setError(result.error || "Listing failed");
+        setError((result?.error as string) ?? "Listing failed");
         setPosting(false);
         return;
       }
 
       console.log("[AppraisalModal] Listed on eBay:", result.listing_url);
       close();
-    } catch (err) {
+    } catch {
       setError("Network error — try again");
       setPosting(false);
     }
@@ -111,7 +152,7 @@ const AppraisalModal = ({ handleClose, data }) => {
   const appr = data?.appraisal;
   const titleEl = (
     <div style={styles.titleRow}>
-      <span>{data?.item?.name || "Appraisal"}</span>
+      <span>{data?.item?.name ?? "Appraisal"}</span>
       <button style={styles.closeX} onClick={close} aria-label="Close">
         ✕
       </button>
@@ -121,14 +162,14 @@ const AppraisalModal = ({ handleClose, data }) => {
   const footerButtons = [
     {
       text: "Keep in Inventory",
-      variant: "outlined",
+      variant: "outlined" as const,
       onClick: handleKeep,
       disabled: posting,
       secondary: true
     },
     {
       text: posting ? "Posting…" : "Post to eBay",
-      variant: "contained",
+      variant: "contained" as const,
       primary: true,
       disabled: posting || !price.trim() || !title.trim(),
       onClick: handlePost
@@ -141,9 +182,7 @@ const AppraisalModal = ({ handleClose, data }) => {
       title={titleEl}
       style={{ maxWidth: "480px", width: "100%" }}
       footerButtons={footerButtons}
-      footerJustify="space-between"
     >
-      {/* Image + condition */}
       {(data?.preview || data?.image_url) && (
         <div style={styles.imageWrap}>
           <img src={data.preview || data.image_url} alt="item" style={styles.image} />
@@ -151,7 +190,6 @@ const AppraisalModal = ({ handleClose, data }) => {
         </div>
       )}
 
-      {/* Appraisal values */}
       {appr ? (
         <>
           <div style={styles.valRow}>
@@ -181,7 +219,6 @@ const AppraisalModal = ({ handleClose, data }) => {
 
       <div style={styles.divider} />
 
-      {/* Editable listing fields */}
       <p style={styles.sectionLabel}>Listing Details</p>
 
       <label style={styles.fieldLabel}>
@@ -220,7 +257,7 @@ const AppraisalModal = ({ handleClose, data }) => {
           Condition
           <select
             value={condition}
-            onChange={e => setCondition(e.target.value)}
+            onChange={e => setCondition(e.target.value as Condition)}
             style={styles.select}
           >
             {CONDITIONS.map(c => (
@@ -254,7 +291,7 @@ const AppraisalModal = ({ handleClose, data }) => {
   );
 };
 
-const styles = {
+const styles: Record<string, CSSProperties> = {
   titleRow: {
     display: "flex",
     alignItems: "center",
@@ -389,8 +426,11 @@ const styles = {
     marginBottom: "12px"
   },
   specificsLabel: {
-    fontSize: "0.78rem", color: "#f5c842", margin: "0 0 10px",
-    textTransform: "uppercase", letterSpacing: "0.06em"
+    fontSize: "0.78rem",
+    color: "#f5c842",
+    margin: "0 0 10px",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em"
   },
   error: { color: "#ff6b6b", fontSize: "0.82rem", margin: "0" }
 };

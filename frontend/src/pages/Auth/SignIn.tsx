@@ -1,13 +1,19 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/** @module SignIn */
+
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useDispatch } from "react-redux";
 import { login, addLoginAuthentication } from "../../redux/actions/userActions";
 import { addSnackbar } from "../../redux/actions/snackbarActions";
+import { useAppDispatch } from "../../redux/hooks";
 import "../../App.css";
 
+type AuthResponse = {
+  success?: boolean;
+  error?: string;
+};
+
 const SignIn = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,15 +24,14 @@ const SignIn = () => {
     setLoading(true);
 
     try {
-      const response: any = await dispatch(
-        // @ts-expect-error In a real app, this would call the backend API. For this demo, it just simulates success.
-        login({ email, password })
-      );
+      const response = dispatch(login({ email, password })) as unknown;
 
-      // If the API returns success, it will have already updated state.
-      if (response?.success) {
-        navigate("/snap");
-        return;
+      if (typeof response === "object" && response !== null && "success" in response) {
+        const res = response as AuthResponse;
+        if (res.success) {
+          navigate("/snap");
+          return;
+        }
       }
 
       // Fallback for demo mode (no backend)
@@ -40,10 +45,11 @@ const SignIn = () => {
         })
       );
       navigate("/snap");
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to sign in";
       dispatch(
         addSnackbar({
-          message: error?.message ?? "Failed to sign in",
+          message,
           severity: "error"
         })
       );

@@ -1,3 +1,5 @@
+/** @module CollectionItemPage */
+
 import { useParams, Link } from "react-router-dom";
 import "../App.css";
 
