@@ -35,6 +35,7 @@ type FieldValues = {
   category: string;
   brand: string;
   year: string;
+  condition: string;
 };
 
 const EMPTY_FIELDS: FieldValues = {
@@ -42,7 +43,8 @@ const EMPTY_FIELDS: FieldValues = {
   description: "",
   category: "",
   brand: "",
-  year: ""
+  year: "",
+  condition: ""
 };
 
 const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalReady }) => {
@@ -179,7 +181,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
         description: typeof data.description === "string" ? data.description : description,
         category: typeof data.category === "string" ? data.category : "",
         brand: typeof data.brand === "string" ? data.brand : "",
-        year: typeof data.year === "string" ? data.year : ""
+        year: typeof data.year === "string" ? data.year : "",
+        condition: typeof data.condition === "string" ? data.condition : ""
       };
       setFields(parsed);
       setCondition(typeof data.condition === "string" ? data.condition : "");
@@ -445,6 +448,16 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
               value={fields.brand}
               onChange={setField("brand")}
               placeholder="Brand or manufacturer"
+              style={styles.input}
+            />
+          </label>
+
+          <label style={styles.fieldLabel}>
+            Condition
+            <input
+              value={fields.condition}
+              onChange={setField("condition")}
+              placeholder="e.g. Excellent, Good, Fair"
               style={styles.input}
             />
           </label>

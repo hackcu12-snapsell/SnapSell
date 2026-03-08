@@ -6,10 +6,10 @@ VALUES
 
 
 -- ITEMS
-INSERT INTO items (userid, name, description, category, brand, year, status,sale_cost)
+INSERT INTO items (userid, name, description, category, brand, year, status, condition, sale_cost)
 VALUES
-(1, 'Vintage Rolex Submariner', 'Classic dive watch in excellent condition', 'watch', 'Rolex', 1995, 'inventory', 0),
-(2, 'Charizard Holo Card', 'Pokemon Base Set holographic Charizard', 'trading card', 'Pokemon', 1999, 'appraised', 0);
+(1, 'Vintage Rolex Submariner', 'Classic dive watch in excellent condition', 'watch', 'Rolex', 1995, 'inventory', 'Excellent', 0),
+(2, 'Charizard Holo Card', 'Pokemon Base Set holographic Charizard', 'trading card', 'Pokemon', 1999, 'appraised', 'Good', 0);
 
 
 -- ITEM IMAGES
