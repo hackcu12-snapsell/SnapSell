@@ -397,7 +397,6 @@ pre {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  padding-top: 1rem;
 }
 
 .collection-section-header {
@@ -434,6 +433,30 @@ pre {
 .collection-section-title {
   margin: 0;
   font-size: 1.85rem;
+}
+
+.collection-section-count {
+  font-size: 0.9rem;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.72);
+  margin-left: 0.6rem;
+}
+
+.collection-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.collection-page-title {
+  margin: 0;
+  font-size: 1.9rem;
+  white-space: nowrap;
+}
+
+.snappy {
+  white-space: nowrap;
 }
 
 .collection-section-controls {
@@ -482,12 +505,12 @@ pre {
 }
 
 .collection-section {
-  padding-top: 1.25rem;
-  padding-bottom: 1.25rem;
+  /* padding-top: 1.25rem;
+  padding-bottom: 1.25rem; */
 }
 
 .collection-section + .collection-section {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: none;
   padding-top: 0.5rem;
 }
 

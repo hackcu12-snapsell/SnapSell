@@ -44,7 +44,7 @@ const LOADING_LINES = [
   "Talking yourself out of keeping it again...",
   "Measuring something with a shoe...",
   "Realizing you owned this for 8 years unused...",
-  "Celebrating quietly at the kitchen table...",
+  "Celebrating quietly at the kitchen table..."
 ] as const;
 
 // ─── Timing & geometry ────────────────────────────────────────────────────────
@@ -74,6 +74,7 @@ const CSS = `
     justify-content: center;
     overflow: hidden;
     z-index: 9999;
+    background-color: #1c1c1e;
   }
 
   /* Fixed-size stage so the orbit never bleeds out */
@@ -155,6 +156,7 @@ const CSS = `
     position: absolute;
     inset: 0;
     z-index: 10;
+    background-color: #1c1c1e;
   }
   .ls-root--contained .ls-text {
     position: absolute;
@@ -168,7 +170,7 @@ const CSS = `
 export default function LoadingScreen({
   onComplete,
   backgroundColor = "#F5F2EE",
-  contained = false,
+  contained = false
 }: LoadingScreenProps): React.ReactElement {
   // Which emoji is currently at the bottom of the orbit (the featured one)
   const [emojiIndex, setEmojiIndex] = useState(0);
@@ -184,8 +186,7 @@ export default function LoadingScreen({
       const link = document.createElement("link");
       link.id = FONT_LINK_ID;
       link.rel = "stylesheet";
-      link.href =
-        "https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&display=swap";
+      link.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&display=swap";
       document.head.appendChild(link);
     }
     return () => {
@@ -231,10 +232,7 @@ export default function LoadingScreen({
             same amount to stay upright. Because both transitions share the same
             duration + easing, they stay perfectly in sync.
           */}
-          <div
-            className="ls-orbit"
-            style={{ transform: `rotate(${orbitRot}deg)` }}
-          >
+          <div className="ls-orbit" style={{ transform: `rotate(${orbitRot}deg)` }}>
             {EMOJIS.map((emoji, i) => {
               // Static angle for this emoji slot (evenly distributed around the circle)
               const angleDeg = (i / N) * 360;
@@ -249,7 +247,7 @@ export default function LoadingScreen({
                   key={i}
                   className={`ls-orbit-emoji${isFeatured ? " ls-orbit-emoji--featured" : ""}`}
                   style={{
-                    transform: `translate(${x}px, ${y}px) rotate(${-orbitRot}deg) scale(${isFeatured ? 2 : 0.7})`,
+                    transform: `translate(${x}px, ${y}px) rotate(${-orbitRot}deg) scale(${isFeatured ? 2 : 0.7})`
                   }}
                   aria-hidden="true"
                 >

@@ -18,7 +18,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 
 .collection-card-image-wrapper {
@@ -46,9 +48,9 @@
 .collection-card-footer {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 0.5rem;
-  text-align: center;
+  min-width: 0;
 }
 
 .collection-card-name {
@@ -57,4 +59,12 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.collection-card-price {
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #e3e3e3;
 }

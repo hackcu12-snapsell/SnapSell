@@ -53,7 +53,7 @@ const Modal: React.FC<ModalProps> = ({ modal_id, title, children, footerButtons,
     >
       <DialogTitle sx={{ paddingBottom: 0, color: "#fff" }}>
         {title}
-        <Divider sx={{ marginTop: 1, borderColor: "rgba(255,255,255,0.12)" }} />
+        <Divider sx={{ marginTop: 1, borderColor: "rgba(255,255,255,0.12)", marginBottom: 1 }} />
       </DialogTitle>
 
       <DialogContent
