@@ -13,6 +13,7 @@ load_dotenv()
 
 from ebay import post_listing, upload_image
 from auth import auth_bp
+from category import resolve_category
 
 app = Flask(__name__)
 CORS(app)
@@ -86,22 +87,31 @@ def upload_image_route():
 @app.route("/api/post-listing", methods=["POST"])
 def post_listing_route():
     data = request.get_json()
-    required = ["title", "description", "price", "category_id", "condition"]
+    required = ["title", "description", "price", "condition"]
     if missing := [f for f in required if f not in data]:
         return jsonify({"error": f"Missing fields: {missing}"}), 400
 
-    verify = data.get("verify", True)  # defaults to dry run
+    # Auto-resolve category if not supplied
+    category_id = data.get("category_id") or resolve_category(
+        client,
+        name=data["title"],
+        description=data["description"],
+        category_hint=data.get("category", ""),
+    )
+
+    verify = data.get("verify", True)
 
     result = post_listing(
         title=data["title"],
         description=data["description"],
         price=float(data["price"]),
-        category_id=str(data["category_id"]),
+        category_id=str(category_id),
         condition=data["condition"],
         item_specifics=data.get("item_specifics", {}),
         image_urls=data.get("image_urls", []),
         verify=verify,
     )
+    result["resolved_category_id"] = str(category_id)
     return jsonify(result)
 
 
