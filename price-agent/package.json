@@ -8,7 +8,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:synthesis": "ts-node src/scripts/test-synthesis-llm.ts",
-    "dev": "ts-node src/agents/index.ts"
+    "dev": "ts-node src/agents/index.ts",
+    "server": "ts-node src/server.ts"
   },
   "dependencies": {
     "dotenv": "^16.0.0",

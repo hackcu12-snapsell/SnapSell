@@ -60,17 +60,13 @@ function makeAppraisalInput(): AppraisalWriteInput {
     volume_score: 0.6,
     reasonings: "Based on 10 eBay listings.",
     caveats: null,
-    agents_used: ["ebay", "amazon"],
-    agents_failed: [],
-    raw_agent_output: emptyOutput,
+    recommendation: "haggle",
     listing_references: [
       {
         url: "https://ebay.com/itm/123",
         source: "ebay",
         price: 75,
         condition: "used",
-        title: "Test Item Used",
-        data_type: "asking_price",
       },
     ],
   };
@@ -118,7 +114,7 @@ describe("writeAppraisal", () => {
 
     const calls = mockQuery.mock.calls.map((c) => c[0] as string);
     expect(calls.some((sql) => sql.includes("INSERT INTO appraisals"))).toBe(true);
-    expect(calls.some((sql) => sql.includes("INSERT INTO listing_references"))).toBe(true);
+    expect(calls.some((sql) => sql.includes("INSERT INTO listing_reference"))).toBe(true);
     expect(calls.some((sql) => sql.includes("UPDATE items"))).toBe(true);
   });
 
