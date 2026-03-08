@@ -24,11 +24,19 @@ const CollectionCard = ({ item, to, onRevisePrice }) => {
   const stale = isStale(item);
   const listingPrice = item.listingPrice ?? 0;
   const purchasePrice = item.purchasePrice ?? 0;
-  const suggestedPrice = Math.max(
-    parseFloat((listingPrice * 0.95).toFixed(2)),
-    purchasePrice
-  );
+  const suggestedPrice = Math.max(parseFloat((listingPrice * 0.95).toFixed(2)), purchasePrice);
   const canDrop = listingPrice > 0 && suggestedPrice < listingPrice;
+
+  // Inventory items should display the purchase price; other statuses show listing price.
+  const displayPrice =
+    item.status === "inventory" || item.status === "appraised"
+      ? (purchasePrice ?? item.price ?? null)
+      : (listingPrice ?? item.price ?? null);
+
+  const displayPriceText =
+    displayPrice != null
+      ? `$${displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : "";
 
   // Close on outside click
   useEffect(() => {
@@ -64,58 +72,65 @@ const CollectionCard = ({ item, to, onRevisePrice }) => {
     setPopoverOpen(false);
   };
 
-  const popover = popoverOpen && createPortal(
-    <div
-      ref={popoverRef}
-      style={{
-        position: "fixed",
-        top: popoverPos.top,
-        left: popoverPos.left,
-        width: "240px",
-        background: "#1e1e1e",
-        border: "1px solid rgba(255,200,50,0.35)",
-        borderRadius: "10px",
-        padding: "14px",
-        fontSize: "0.8rem",
-        color: "#ccc",
-        lineHeight: 1.6,
-        zIndex: 9999,
-        boxShadow: "0 6px 24px rgba(0,0,0,0.7)"
-      }}
-    >
-      <p style={{ margin: "0 0 8px", color: "#f5c842", fontWeight: 700, fontSize: "0.85rem" }}>
-        Stale listing
-      </p>
-      <p style={{ margin: "0 0 10px" }}>
-        Listed for over 2 weeks with no price change. A price drop can help attract buyers.
-      </p>
-      {canDrop ? (
-        <>
-          <p style={{ margin: "0 0 10px" }}>
-            Suggested:{" "}
-            <strong style={{ color: "#fff" }}>${suggestedPrice.toFixed(2)}</strong>
-            {" "}(−5% from ${listingPrice.toFixed(2)})
-          </p>
-          <button
-            onClick={handleApply}
-            disabled={applying}
-            style={{
-              width: "100%", padding: "8px", borderRadius: "6px",
-              background: "#f59e0b", border: "none", color: "#000",
-              fontWeight: 700, fontSize: "0.82rem", cursor: applying ? "default" : "pointer"
-            }}
-          >
-            {applying ? "Applying…" : "Apply Price Drop"}
-          </button>
-        </>
-      ) : (
-        <p style={{ margin: 0, color: "#888", fontStyle: "italic" }}>
-          Cannot drop below purchase price (${purchasePrice.toFixed(2)}).
+  const popover =
+    popoverOpen &&
+    createPortal(
+      <div
+        ref={popoverRef}
+        style={{
+          position: "fixed",
+          top: popoverPos.top,
+          left: popoverPos.left,
+          width: "240px",
+          background: "#1e1e1e",
+          border: "1px solid rgba(255,200,50,0.35)",
+          borderRadius: "10px",
+          padding: "14px",
+          fontSize: "0.8rem",
+          color: "#ccc",
+          lineHeight: 1.6,
+          zIndex: 9999,
+          boxShadow: "0 6px 24px rgba(0,0,0,0.7)"
+        }}
+      >
+        <p style={{ margin: "0 0 8px", color: "#f5c842", fontWeight: 700, fontSize: "0.85rem" }}>
+          Stale listing
         </p>
-      )}
-    </div>,
-    document.body
-  );
+        <p style={{ margin: "0 0 10px" }}>
+          Listed for over 2 weeks with no price change. A price drop can help attract buyers.
+        </p>
+        {canDrop ? (
+          <>
+            <p style={{ margin: "0 0 10px" }}>
+              Suggested: <strong style={{ color: "#fff" }}>${suggestedPrice.toFixed(2)}</strong>{" "}
+              (−5% from ${listingPrice.toFixed(2)})
+            </p>
+            <button
+              onClick={handleApply}
+              disabled={applying}
+              style={{
+                width: "100%",
+                padding: "8px",
+                borderRadius: "6px",
+                background: "#f59e0b",
+                border: "none",
+                color: "#000",
+                fontWeight: 700,
+                fontSize: "0.82rem",
+                cursor: applying ? "default" : "pointer"
+              }}
+            >
+              {applying ? "Applying…" : "Apply Price Drop"}
+            </button>
+          </>
+        ) : (
+          <p style={{ margin: 0, color: "#888", fontStyle: "italic" }}>
+            Cannot drop below purchase price (${purchasePrice.toFixed(2)}).
+          </p>
+        )}
+      </div>,
+      document.body
+    );
 
   const alertBadge = stale && (
     <>
@@ -123,13 +138,25 @@ const CollectionCard = ({ item, to, onRevisePrice }) => {
         ref={badgeRef}
         onClick={handleBadgeClick}
         style={{
-          position: "absolute", top: "8px", right: "8px", zIndex: 10,
-          width: "22px", height: "22px", borderRadius: "50%",
-          background: "#f59e0b", display: "flex", alignItems: "center",
-          justifyContent: "center", fontSize: "13px", fontWeight: 700,
-          color: "#000", cursor: "pointer", boxShadow: "0 2px 6px rgba(0,0,0,0.4)"
+          position: "absolute",
+          top: "8px",
+          right: "8px",
+          zIndex: 10,
+          width: "22px",
+          height: "22px",
+          borderRadius: "50%",
+          background: "#f59e0b",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "13px",
+          fontWeight: 700,
+          color: "#000",
+          cursor: "pointer",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.4)"
         }}
-      >!
+      >
+        !
       </div>
       {popover}
     </>
@@ -149,11 +176,13 @@ const CollectionCard = ({ item, to, onRevisePrice }) => {
       <div className="collection-card-footer">
         <span
           className="collection-card-name"
-          title={item.price != null ? `${item.name} • $${item.price.toLocaleString()}` : item.name}
+          title={`${item.name}${displayPriceText ? ` • ${displayPriceText}` : ""}`}
         >
           {item.name}
-          {item.price != null && ` • $${item.price.toLocaleString()}`}
         </span>
+        {displayPriceText ? (
+          <span className="collection-card-price">{displayPriceText}</span>
+        ) : null}
       </div>
     </>
   );

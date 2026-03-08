@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useAppSelector } from "../redux/hooks";
 import Modal from "../common/Modal/Modal";
 import LoadingScreen from "../common/LoadingScreen";
+import { FormControl, InputLabel, MenuItem, Select, type SelectChangeEvent } from "@mui/material";
 
 const MODAL_ID = "addItemModal";
 
@@ -325,7 +326,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
       {isLoading ? (
         /* Fixed-size box so the modal never grows/shrinks during animation */
         <div style={{ position: "relative", height: "280px", overflow: "hidden" }}>
-          <LoadingScreen contained backgroundColor="#1a1a1a" />
+          <LoadingScreen contained backgroundColor="#1c1c1e" />
         </div>
       ) : (
         <>
@@ -496,20 +497,51 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
                 </label>
               </div>
 
-              <label style={styles.fieldLabel}>
-                Condition
-                <select
+              <FormControl fullWidth size="small" sx={{ marginTop: 1 }}>
+                <InputLabel id="condition-select-label">Condition</InputLabel>
+                <Select
+                  labelId="condition-select-label"
                   value={condition || "Good"}
-                  onChange={e => setCondition(e.target.value)}
-                  style={styles.select}
+                  label="Condition"
+                  onChange={(event: SelectChangeEvent<string>) => setCondition(event.target.value)}
+                  sx={{
+                    background: "rgba(255,255,255,0.08)",
+                    borderRadius: 1,
+                    color: "#fff",
+                    "& .MuiSelect-select": {
+                      display: "flex",
+                      alignItems: "center"
+                    }
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        backgroundColor: "rgba(0,0,0,0.8)",
+                        color: "#fff",
+                        mt: 1,
+                        border: "1px solid rgba(255,255,255,0.15)",
+                        boxShadow: "0 6px 16px rgba(0,0,0,0.45)"
+                      }
+                    },
+                    MenuListProps: {
+                      sx: {
+                        "& .MuiMenuItem-root": {
+                          color: "#fff"
+                        },
+                        "& .MuiMenuItem-root:hover": {
+                          backgroundColor: "rgba(255,255,255,0.12)"
+                        }
+                      }
+                    }
+                  }}
                 >
                   {CONDITIONS.map(c => (
-                    <option key={c} value={c}>
+                    <MenuItem key={c} value={c}>
                       {c}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
-              </label>
+                </Select>
+              </FormControl>
 
               {saveError && <p style={styles.saveError}>{saveError}</p>}
             </>
@@ -754,15 +786,19 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid #ff6b6b"
   },
   select: {
-    background: "rgba(255,255,255,0.07)",
+    /* Windows uses its own dropdown rendering; keep text readable on white backgrounds. */
+    background: "rgba(255,255,255,0.12)",
     border: "1px solid rgba(255,255,255,0.15)",
     borderRadius: "6px",
-    color: "#fff",
+    color: "#000",
     fontSize: "0.95rem",
     padding: "8px",
     width: "100%",
     fontFamily: "inherit",
-    boxSizing: "border-box"
+    boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
+    MozAppearance: "none"
   },
   reviewPreviewRow: {
     position: "relative",
