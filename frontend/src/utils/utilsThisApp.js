@@ -55,7 +55,7 @@ export const logApiCall = funcProps => {
     default:
       color = "teal";
   }
-  /* eslint-disable no-console */
+
   console.groupCollapsed(
     `%cAPI CALL > ${action} ${method ? `[${method}]` : ""}${url ? `: ${url}` : ""}`,
     consoleColor(color)

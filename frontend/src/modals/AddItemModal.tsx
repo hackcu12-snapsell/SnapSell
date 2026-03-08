@@ -1,16 +1,48 @@
 /** @module AddItemModal */
 
-import React, { useRef, useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import React, { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useAppSelector } from "../redux/hooks";
 import Modal from "../common/Modal/Modal";
 
 const MODAL_ID = "addItemModal";
 
-const EMPTY_FIELDS = { name: "", description: "", category: "", brand: "", year: "" };
+type AddItemModalProps = {
+  handleClose: (modalId: string) => void;
+  onAppraisalReady?: (data: AppraisalReadyData) => void;
+};
 
-const AddItemModal = ({ handleClose, onAppraisalReady }) => {
-  const isOpen = useSelector(state => state.modalState[MODAL_ID]);
-  const tokenFromStore = useSelector(state => state.userState.loginResult?.token);
+type AppraisalReadyData = {
+  item_id: number;
+  image_url?: string;
+  preview?: string;
+  condition?: string;
+  item?: { name?: string; description?: string };
+  appraisal?: Record<string, unknown>;
+};
+
+type Mode = "photo" | "manual";
+
+type Stage = "capture" | "review" | "saving";
+
+type FieldValues = {
+  name: string;
+  description: string;
+  category: string;
+  brand: string;
+  year: string;
+};
+
+const EMPTY_FIELDS: FieldValues = {
+  name: "",
+  description: "",
+  category: "",
+  brand: "",
+  year: ""
+};
+
+const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalReady }) => {
+  const isOpen = useAppSelector(state => Boolean(state.modalState[MODAL_ID]));
+  const tokenFromStore = useAppSelector(state => state.userState.loginResult?.token);
   // Fallback to localStorage in case Redux hasn't rehydrated yet
   const token =
     tokenFromStore ||
@@ -22,35 +54,34 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
       }
     })();
 
-  const [mode, setMode] = useState("photo");
-  // stage: "capture" | "review" | "saving"
-  const [stage, setStage] = useState("capture");
+  const [mode, setMode] = useState<Mode>("photo");
+  const [stage, setStage] = useState<Stage>("capture");
 
   const [cameraActive, setCameraActive] = useState(false);
-  const [capturedFile, setCapturedFile] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [capturedFile, setCapturedFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
-  const [cameraError, setCameraError] = useState(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // Review stage fields
-  const [fields, setFields] = useState(EMPTY_FIELDS);
+  const [fields, setFields] = useState<FieldValues>(EMPTY_FIELDS);
   const [condition, setCondition] = useState("");
 
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const streamRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (isOpen && mode === "photo" && stage === "capture" && !capturedFile) {
       startCamera();
     }
     if (!isOpen) stopCamera();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  // Assign stream once video element is mounted (MUI Dialog lazy-mounts children)
+  // Assign stream once video element is mounted
   useEffect(() => {
     if (cameraActive && streamRef.current && videoRef.current) {
       videoRef.current.srcObject = streamRef.current;
@@ -72,7 +103,7 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
   };
 
   const stopCamera = () => {
-    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current?.getTracks().forEach(track => track.stop());
     streamRef.current = null;
     setCameraActive(false);
   };
@@ -80,10 +111,17 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
   const capturePhoto = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    canvas.getContext("2d").drawImage(video, 0, 0);
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0);
     canvas.toBlob(blob => {
+      if (!blob) return;
       const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
       setCapturedFile(file);
       setPreview(URL.createObjectURL(blob));
@@ -91,8 +129,8 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
     }, "image/jpeg");
   };
 
-  const handleUpload = e => {
-    const file = e.target.files?.[0];
+  const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
     stopCamera();
     setCapturedFile(file);
@@ -127,23 +165,23 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
     const body = new FormData();
     body.append("image", capturedFile);
     if (description.trim()) body.append("description", description.trim());
+
     try {
       const res = await fetch("/api/analyze-item", { method: "POST", body });
-      const data = await res.json();
+      const data = (await res.json()) as Record<string, unknown>;
       const parsed = {
-        name: data.name || "",
-        description: data.description || description,
-        category: data.category || "",
-        brand: data.brand || "",
-        year: data.year || ""
+        name: typeof data.name === "string" ? data.name : "",
+        description: typeof data.description === "string" ? data.description : description,
+        category: typeof data.category === "string" ? data.category : "",
+        brand: typeof data.brand === "string" ? data.brand : "",
+        year: typeof data.year === "string" ? data.year : ""
       };
       setFields(parsed);
-      setCondition(data.condition || "");
+      setCondition(typeof data.condition === "string" ? data.condition : "");
 
       if (data.needs_review) {
         setStage("review");
       } else {
-        // Confident identification — skip review and save immediately
         await handleSave(parsed);
       }
     } catch (err) {
@@ -153,7 +191,7 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
     }
   };
 
-  const handleSave = async (overrideFields = null) => {
+  const handleSave = async (overrideFields: FieldValues | null = null) => {
     const saveFields = overrideFields || fields;
     if (!capturedFile || !saveFields.name.trim()) return;
     setStage("saving");
@@ -165,26 +203,32 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
     body.append("brand", (saveFields.brand || "").trim());
     body.append("year", (saveFields.year || "").toString().trim());
     body.append("purchase_price", purchasePrice || "0");
+
     try {
       const res = await fetch("/api/save-item", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body
       });
-      const data = await res.json();
+
+      const data = (await res.json()) as Record<string, unknown>;
+
       if (!res.ok) {
         console.error("[AddItemModal] Save failed:", data);
         setStage("review");
         return;
       }
-      console.log("[AddItemModal] Saved item:", data.item_id, "| image:", data.image_url);
+
+      const itemId = typeof data.item_id === "number" ? data.item_id : undefined;
+      const imageUrl = typeof data.image_url === "string" ? data.image_url : undefined;
+
       onAppraisalReady?.({
-        item_id: data.item_id,
-        image_url: data.image_url,
-        preview,
+        item_id: itemId ?? 0,
+        image_url: imageUrl,
+        preview: preview ?? undefined,
         condition,
-        item: data.item,
-        appraisal: data.appraisal
+        item: (data.item as Record<string, unknown>) ?? undefined,
+        appraisal: (data.appraisal as Record<string, unknown>) ?? undefined
       });
       close();
     } catch (err) {
@@ -193,7 +237,12 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
     }
   };
 
-  const setField = key => e => setFields(f => ({ ...f, [key]: e.target.value }));
+  const setField =
+    (key: keyof FieldValues) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setFields(prev => ({ ...prev, [key]: value }));
+    };
 
   // ── Footer buttons ──────────────────────────────────────────────────────────
   const footerButtons =
@@ -201,7 +250,7 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
       ? [
           {
             text: analyzing ? "Analyzing…" : "Analyze Item",
-            variant: "contained",
+            variant: "contained" as const,
             primary: true,
             disabled: !capturedFile || analyzing,
             onClick: handleAnalyze
@@ -210,10 +259,10 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
       : [
           {
             text: stage === "saving" ? "Saving…" : "Save & Appraise",
-            variant: "contained",
+            variant: "contained" as const,
             primary: true,
             disabled: !fields.name.trim() || stage === "saving",
-            onClick: handleSave
+            onClick: () => handleSave(null)
           }
         ];
 
@@ -398,7 +447,7 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
   );
 };
 
-const styles = {
+const styles: Record<string, CSSProperties> = {
   titleRow: {
     display: "flex",
     alignItems: "center",

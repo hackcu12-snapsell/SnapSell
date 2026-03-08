@@ -1,12 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/** @module LandingPage */
+
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+
+import { useAppSelector } from "../redux/hooks";
+
 import "../App.css";
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const loginResult = useSelector((state: any) => state.userState.loginResult);
+  const loginResult = useAppSelector(state => state.userState.loginResult);
   const isLoggedIn = Boolean(loginResult);
 
   const buttonLabel = useMemo(() => {
