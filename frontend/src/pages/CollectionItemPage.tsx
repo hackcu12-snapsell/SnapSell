@@ -3,6 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { useAppDispatch } from "../redux/hooks";
+import { addSnackbar } from "../redux/actions/snackbarActions";
 
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -63,6 +65,7 @@ const STATUS_LABEL: Record<ItemStatus, string> = {
 
 const CollectionItemPage = () => {
   const { id } = useParams<{ id: string }>();
+  const dispatch = useAppDispatch();
   const loginResult = useSelector((state: RootState) => state.userState.loginResult);
   const token = loginResult?.token;
 
@@ -236,10 +239,7 @@ const CollectionItemPage = () => {
                   ? raw.image
                   : ""
           ),
-          price:
-            raw.listing_price != null
-              ? Number(raw.listing_price)
-              : null,
+          price: raw.listing_price != null ? Number(raw.listing_price) : null,
           listingPrice: raw.listing_price != null ? Number(raw.listing_price) : null,
           postedDate: typeof raw.posted_date === "string" ? raw.posted_date : null,
           ebayListingUrl: typeof raw.ebay_listing_url === "string" ? raw.ebay_listing_url : null,
@@ -299,8 +299,9 @@ const CollectionItemPage = () => {
       if (!res.ok) {
         setReviseError((result.error as string) ?? "Failed to revise price");
       } else {
-        setItem(prev => prev ? { ...prev, listingPrice: parseFloat(newPrice) } : prev);
+        setItem(prev => (prev ? { ...prev, listingPrice: parseFloat(newPrice) } : prev));
         setReviseSuccess(true);
+        dispatch(addSnackbar({ message: "Price updated", severity: "success" }));
         setNewPrice("");
         setTimeout(() => setRevisePriceOpen(false), 1000);
       }
@@ -353,7 +354,13 @@ const CollectionItemPage = () => {
         <h1 className="collection-item-title">
           {item.name} <span className="collection-item-title-sep">|</span>{" "}
           <span className="collection-item-status">
-            {item.status === "inventory" ? <><em>In</em> <em>{statusLabel}</em></> : <em>{statusLabel}</em>}
+            {item.status === "inventory" ? (
+              <>
+                <em>In</em> <em>{statusLabel}</em>
+              </>
+            ) : (
+              <em>{statusLabel}</em>
+            )}
           </span>
         </h1>
 
@@ -381,7 +388,12 @@ const CollectionItemPage = () => {
               <button
                 type="button"
                 className="collection-item-btn"
-                onClick={() => { setRevisePriceOpen(o => !o); setReviseError(null); setReviseSuccess(false); setNewPrice(""); }}
+                onClick={() => {
+                  setRevisePriceOpen(o => !o);
+                  setReviseError(null);
+                  setReviseSuccess(false);
+                  setNewPrice("");
+                }}
               >
                 Revise Price
               </button>
@@ -392,10 +404,25 @@ const CollectionItemPage = () => {
                     min="0"
                     step="0.01"
                     value={newPrice}
-                    onChange={e => { setNewPrice(e.target.value); setReviseError(null); setReviseSuccess(false); }}
-                    placeholder={item.listingPrice != null ? `Current: $${item.listingPrice.toFixed(2)}` : "New price"}
+                    onChange={e => {
+                      setNewPrice(e.target.value);
+                      setReviseError(null);
+                      setReviseSuccess(false);
+                    }}
+                    placeholder={
+                      item.listingPrice != null
+                        ? `Current: $${item.listingPrice.toFixed(2)}`
+                        : "New price"
+                    }
                     autoFocus
-                    style={{ padding: "8px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.07)", color: "#fff", fontSize: "0.95rem" }}
+                    style={{
+                      padding: "8px",
+                      borderRadius: "6px",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      background: "rgba(255,255,255,0.07)",
+                      color: "#fff",
+                      fontSize: "0.95rem"
+                    }}
                   />
                   <button
                     type="button"
@@ -406,8 +433,16 @@ const CollectionItemPage = () => {
                   >
                     {revising ? "Updating…" : "Update Price"}
                   </button>
-                  {reviseSuccess && <p style={{ color: "#4ade80", fontSize: "0.82rem", margin: 0 }}>Price updated!</p>}
-                  {reviseError && <p style={{ color: "#ff6b6b", fontSize: "0.82rem", margin: 0 }}>{reviseError}</p>}
+                  {reviseSuccess && (
+                    <p style={{ color: "#4ade80", fontSize: "0.82rem", margin: 0 }}>
+                      Price updated!
+                    </p>
+                  )}
+                  {reviseError && (
+                    <p style={{ color: "#ff6b6b", fontSize: "0.82rem", margin: 0 }}>
+                      {reviseError}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -460,7 +495,9 @@ const CollectionItemPage = () => {
 
         <div className="collection-item-appraisal">
           <span className="collection-item-appraisal-label">
-            {item.status === "listed" || item.status === "sold" ? "Listing Price:" : "Estimated Value:"}
+            {item.status === "listed" || item.status === "sold"
+              ? "Listing Price:"
+              : "Estimated Value:"}
           </span>
           <span className="collection-item-appraisal-value">
             {item.status === "listed" || item.status === "sold"
@@ -524,7 +561,6 @@ const CollectionItemPage = () => {
           </p>
         )}
       </div>
-
     </div>
   );
 };
