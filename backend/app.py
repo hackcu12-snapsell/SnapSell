@@ -8,12 +8,16 @@ from google.genai import types
 from dotenv import load_dotenv
 import os
 
-from ebay import post_listing, upload_image
-
+# Load environment variables from .env before importing modules that rely on them
 load_dotenv()
+
+from ebay import post_listing, upload_image
+from auth import auth_bp
 
 app = Flask(__name__)
 CORS(app)
+
+app.register_blueprint(auth_bp)
 
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
