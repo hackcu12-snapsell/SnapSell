@@ -56,12 +56,6 @@ export async function writeAppraisal(
       );
     }
 
-    // 3. Mark item as appraised
-    await client.query(
-      "UPDATE items SET status = 'appraised' WHERE id = $1",
-      [input.item_id]
-    );
-
     await client.query("COMMIT");
     return { appraisal_id: String(appraisal_id) };
   } catch (err) {
