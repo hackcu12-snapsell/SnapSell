@@ -1,8 +1,18 @@
 /** @module CollectionItemPage */
 
-import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useEffect, useState, type ChangeEvent } from "react";
+import { useParams, Link as RouterLink } from "react-router-dom";
 import { useSelector } from "react-redux";
+
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TablePagination from "@mui/material/TablePagination";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import MuiLink from "@mui/material/Link";
 
 import { API_URL, getItemImageUrl } from "../data/constants";
 import { basicAPI } from "../utils/utilsThisApp";
@@ -56,6 +66,74 @@ const CollectionItemPage = () => {
   const [item, setItem] = useState<Item | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  const getListingDisplayName = (url: string) => {
+    if (!url) return "";
+
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.replace(/^www\./, "");
+
+      if (host.includes("amazon.com")) {
+        const match = parsed.pathname.match(/^\/([^/]+)\/dp\//);
+        if (match?.[1]) {
+          return decodeURIComponent(match[1].replace(/[-_]+/g, " "));
+        }
+      }
+
+      if (host.includes("ebay.com")) {
+        const params = parsed.searchParams;
+        const keyword = params.get("_skw") || params.get("keywords");
+        if (keyword) {
+          return decodeURIComponent(keyword.replace(/\+/g, " "));
+        }
+        const match = parsed.pathname.match(/\/itm\/(?:\d+\/)?([^/]+)/);
+        if (match?.[1]) {
+          return decodeURIComponent(match[1].replace(/[-_]+/g, " "));
+        }
+      }
+
+      const segments = parsed.pathname.split("/").filter(Boolean);
+      if (segments.length > 0) {
+        return decodeURIComponent(segments[segments.length - 1].replace(/[-_]+/g, " "));
+      }
+
+      return host;
+    } catch {
+      return url;
+    }
+  };
+
+  const getListingSource = (url: string) => {
+    if (!url) return "Unknown";
+
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.replace(/^www\./, "");
+
+      if (host.includes("amazon.com")) return "Amazon";
+      if (host.includes("ebay.com")) return "eBay";
+
+      return host;
+    } catch {
+      return "Unknown";
+    }
+  };
+
+  const truncate = (text: string, max = 60) =>
+    text.length <= max ? text : `${text.slice(0, max).trim()}…`;
+
+  const handleChangePage = (_: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -198,9 +276,9 @@ const CollectionItemPage = () => {
     return (
       <div className="collection-item-page">
         <p className="collection-item-loading">Loading item…</p>
-        <Link to="/collection" className="collection-item-back">
+        <RouterLink to="/collection" className="collection-item-back">
           ← Back to collection
-        </Link>
+        </RouterLink>
       </div>
     );
   }
@@ -209,20 +287,28 @@ const CollectionItemPage = () => {
     return (
       <div className="collection-item-page">
         <p className="collection-item-error">Item not found.</p>
-        <Link to="/collection" className="collection-item-back">
+        <RouterLink to="/collection" className="collection-item-back">
           ← Back to collection
-        </Link>
+        </RouterLink>
       </div>
     );
   }
 
   const statusLabel = STATUS_LABEL[item.status];
 
+  const filteredListings = (item.listings ?? []).filter(listing =>
+    Boolean(listing.url && listing.url.trim())
+  );
+  const paginatedListings = filteredListings.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
   return (
     <div className="collection-item-page">
-      <Link to="/collection" className="collection-item-back">
+      <RouterLink to="/collection" className="collection-item-back">
         ← Back to collection
-      </Link>
+      </RouterLink>
 
       <div className="collection-item-header">
         <h1 className="collection-item-title">
@@ -291,39 +377,47 @@ const CollectionItemPage = () => {
       <div className="collection-item-listings-card">
         <h3 className="collection-item-listings-title">Listing references</h3>
 
-        {item.listings && item.listings.length > 0 ? (
-          <table className="collection-item-listings-table">
-            <thead>
-              <tr>
-                <th>URL</th>
-                <th>Condition</th>
-                <th>Price</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {item.listings.map((listing, idx) => (
-                <tr key={idx}>
-                  <td>
-                    <a
-                      href={listing.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="collection-item-listings-link"
-                    >
-                      {listing.url}
-                    </a>
-                  </td>
-
-                  <td className="collection-item-listings-cell">{listing.condition || "—"}</td>
-
-                  <td className="collection-item-listings-cell">
-                    {listing.price != null ? `$${Number(listing.price).toFixed(2)}` : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {filteredListings.length > 0 ? (
+          <TableContainer component={Paper}>
+            <Table size="small" aria-label="listing references">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ width: "60%" }}>Listing</TableCell>
+                  <TableCell sx={{ width: "30%" }}>Source</TableCell>
+                  <TableCell sx={{ width: "20%" }} align="right">
+                    Price
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {paginatedListings.map((listing, idx) => {
+                  const displayName = truncate(getListingDisplayName(listing.url));
+                  return (
+                    <TableRow key={`${listing.url}-${idx}`}>
+                      <TableCell>
+                        <MuiLink href={listing.url} target="_blank" rel="noopener noreferrer">
+                          {displayName || listing.url}
+                        </MuiLink>
+                      </TableCell>
+                      <TableCell>{getListingSource(listing.url)}</TableCell>
+                      <TableCell align="right">
+                        {listing.price != null ? `$${Number(listing.price).toFixed(2)}` : "—"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            <TablePagination
+              component="div"
+              count={filteredListings.length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[5, 10, 25]}
+            />
+          </TableContainer>
         ) : (
           <p className="collection-item-listings-empty">
             No listing references for this appraisal.
