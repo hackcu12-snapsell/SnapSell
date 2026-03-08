@@ -92,6 +92,7 @@ if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
 from ebay import post_listing, upload_image
 from auth import auth_bp
 from fraud import fraud_bp
+from photo_enhance import enhance_bp
 from category import resolve_category
 from db import get_conn, release_conn
 
@@ -100,6 +101,7 @@ CORS(app, resources={r"/*": {"origins": "*", "allow_headers": ["Content-Type", "
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(fraud_bp)
+app.register_blueprint(enhance_bp)
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -158,7 +160,7 @@ def analyze_item():
 
 {{
   "name": "short item name",
-  "description": "detailed description of the item",
+  "description": "detailed description of the item - focus on details that are relevant to searching for the item on a site like ebay.",
   "condition": "one of: New | Like New | Good | Fair | Poor",
   "category": "item category (e.g. Electronics, Clothing, Collectibles, Tools, Furniture, Shoes, etc)",
   "brand": "brand or manufacturer if identifiable, or null",
