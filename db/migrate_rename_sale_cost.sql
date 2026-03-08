@@ -7,3 +7,5 @@ ALTER TABLE items RENAME COLUMN sale_cost TO purchase_price;
 
 -- Add listing_price — set when the item is posted to eBay
 ALTER TABLE items ADD COLUMN IF NOT EXISTS listing_price NUMERIC DEFAULT 0;
+
+
