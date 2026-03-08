@@ -85,13 +85,22 @@ APPRAISAL RULES:
 2. StockX sold prices are the most reliable data available. If present, weight them heavily.
 3. Amazon and Google Shopping are retail CEILINGS — a used/secondhand item is worth less than new retail.
 4. Facebook prices have high variance and are often optimistic — weight them lightly.
-5. value_confidence: 0.0–1.0 based on data volume, consistency, and relevance. If NO listing has relevance above 0.7, set value_confidence to 0.4 or lower. High price variance or < 2 strong comps = lower confidence. If we have strong comps from eBay, we can raise our confidence that our solution is correct.
+5. value_confidence: 0.0–1.0 based on data volume, consistency, and relevance.
+   - If NO listing has relevance above 0.7, cap value_confidence at 0.40.
+   - One exact match (relevance=1.0) from any source warrants confidence ≥ 0.45 on its own.
+   - Two or more exact matches from any source: confidence ≥ 0.55.
+   - High price variance or very few comps: reduce confidence accordingly, but don't over-penalise single high-quality matches.
 6. volume_score: 0.0–1.0 where 1.0 = 20+ strong comps, 0.0 = no comps.
-7. Recommendation thresholds (only apply if asking price was provided):
-   - value_mid >= asking * ${thresholds.BUY_RATIO} → "buy" (great deal)
-   - value_mid >= asking * ${thresholds.HAGGLE_LOW} → "haggle" (fair, room to negotiate)
-   - value_mid < asking * ${thresholds.PASS_RATIO} → "pass" (overpriced)
-   - No asking price OR value_confidence < ${thresholds.MIN_CONFIDENCE_TO_RECOMMEND} → "insufficient_data"
+7. Recommendation logic:
+   If an asking price was provided:
+   - value_mid >= asking * ${thresholds.BUY_RATIO} → "buy"
+   - value_mid >= asking * ${thresholds.HAGGLE_LOW} → "haggle"
+   - value_mid < asking * ${thresholds.PASS_RATIO} → "pass"
+   If NO asking price was provided, judge from market quality:
+   - value_confidence >= 0.45 AND value_mid is not null → "buy" (active market, worth listing)
+   - value_confidence >= ${thresholds.MIN_CONFIDENCE_TO_RECOMMEND} AND value_mid is not null → "haggle" (moderate data, price carefully)
+   - Otherwise → "insufficient_data"
+   Always → "insufficient_data" when value_confidence < ${thresholds.MIN_CONFIDENCE_TO_RECOMMEND} or value_mid is null.
 8. Be conservative. When data is noisy or sparse, widen the low–high range and reduce confidence.
 9. reasonings must cite specific sources and price points (e.g. "Based on 8 eBay listings ranging $120–$180..."). Keep reasonings to 3–5 sentences maximum.
 10. CRITICAL: Output valid JSON only. All string values on one line. No newlines inside strings. Inside any string value, escape double-quotes as \\" (backslash-quote).
@@ -119,15 +128,17 @@ function arithmeticFallback(item: ItemMetadata, results: AgentResult[]): Synthes
   const weightedPrices: number[] = [];
   const sources: string[] = [];
 
-  // Count strong comps (rel > 0.7) and eBay perfect matches (rel === 1)
+  // Count strong comps (rel > 0.7), eBay perfect matches, and all exact matches (rel === 1)
   let strongCount = 0;
   let ebayPerfectCount = 0;
+  let exactMatchCount = 0;
   for (const r of results) {
     if (r.status !== "success" || r.listings.length === 0) continue;
     for (const l of r.listings) {
       const rel = l.relevance_weight ?? 1;
       if (rel > REL_STRONG) strongCount++;
       if (r.source === "ebay" && rel === 1) ebayPerfectCount++;
+      if (rel === 1) exactMatchCount++;
     }
   }
 
@@ -168,23 +179,39 @@ function arithmeticFallback(item: ItemMetadata, results: AgentResult[]): Synthes
   const p75 = weightedPrices[Math.floor(weightedPrices.length * 0.75)];
   let confidence = Math.min(0.90, 0.35 + (weightedPrices.length / 60) * 0.55);
   if (strongCount === 0) confidence = Math.min(confidence, 0.4);
+  // Exact matches are high-quality signals — ensure a meaningful confidence floor
+  if (exactMatchCount >= 2 || strongCount >= 2) confidence = Math.max(confidence, 0.55);
+  else if (exactMatchCount >= 1) confidence = Math.max(confidence, 0.45);
   const volume_score = Math.min(1.0, weightedPrices.length / 20);
 
   const sale_cost = item.sale_cost;
   let recommendation: PurchaseRecommendation = "insufficient_data";
-  let recommendation_reasoning = "No asking price provided — market value shown only.";
+  let recommendation_reasoning = "Insufficient data to make a confident recommendation.";
+  const { MIN_CONFIDENCE_TO_RECOMMEND, BUY_RATIO, HAGGLE_LOW, PASS_RATIO } = RECOMMENDATION_THRESHOLDS;
 
-  if (sale_cost && sale_cost > 0 && p50 > 0 && confidence >= RECOMMENDATION_THRESHOLDS.MIN_CONFIDENCE_TO_RECOMMEND) {
-    const ratio = p50 / sale_cost;
-    if (ratio >= RECOMMENDATION_THRESHOLDS.BUY_RATIO) {
-      recommendation = "buy";
-      recommendation_reasoning = `Market value ($${p50.toFixed(0)}) is ~${((ratio - 1) * 100).toFixed(0)}% above asking — strong deal.`;
-    } else if (ratio >= RECOMMENDATION_THRESHOLDS.HAGGLE_LOW) {
-      recommendation = "haggle";
-      recommendation_reasoning = `Market value ($${p50.toFixed(0)}) is close to asking — worth negotiating.`;
+  if (p50 > 0 && confidence >= MIN_CONFIDENCE_TO_RECOMMEND) {
+    if (sale_cost && sale_cost > 0) {
+      // Compare appraised value vs asking price
+      const ratio = p50 / sale_cost;
+      if (ratio >= BUY_RATIO) {
+        recommendation = "buy";
+        recommendation_reasoning = `Market value ($${p50.toFixed(0)}) is ~${((ratio - 1) * 100).toFixed(0)}% above asking — strong deal.`;
+      } else if (ratio >= HAGGLE_LOW) {
+        recommendation = "haggle";
+        recommendation_reasoning = `Market value ($${p50.toFixed(0)}) is close to asking — worth negotiating.`;
+      } else if (ratio < PASS_RATIO) {
+        recommendation = "pass";
+        recommendation_reasoning = `Asking price exceeds market value ($${p50.toFixed(0)}) by ~${((1 - ratio) * 100).toFixed(0)}%.`;
+      }
     } else {
-      recommendation = "pass";
-      recommendation_reasoning = `Asking price exceeds market value ($${p50.toFixed(0)}) by ~${((1 - ratio) * 100).toFixed(0)}%.`;
+      // No asking price — judge from market quality alone
+      if (confidence >= 0.45) {
+        recommendation = "buy";
+        recommendation_reasoning = `Market estimated at $${p50.toFixed(0)} with solid data — active market, good time to list.`;
+      } else {
+        recommendation = "haggle";
+        recommendation_reasoning = `Market estimated at $${p50.toFixed(0)} with moderate data — price competitively to move it.`;
+      }
     }
   }
 

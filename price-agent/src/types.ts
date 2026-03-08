@@ -169,5 +169,5 @@ export const RECOMMENDATION_THRESHOLDS = {
   PASS_RATIO: 0.90,    // value_mid < 90% of sale_cost → PASS
   // If sale_cost is null/0: recommendation = "insufficient_data" on ask comparison
   // but value range is still appraised and shown.
-  MIN_CONFIDENCE_TO_RECOMMEND: 0.35,  // below this, force "insufficient_data"
+  MIN_CONFIDENCE_TO_RECOMMEND: 0.25,  // below this, force "insufficient_data"
 } as const;
