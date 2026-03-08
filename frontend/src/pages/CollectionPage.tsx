@@ -19,6 +19,10 @@ type Item = {
   status: ItemStatus;
   imageUrl: string;
   price?: number | null;
+  listingPrice?: number | null;
+  purchasePrice?: number | null;
+  postedDate?: string | null;
+  lastPriceChangeDate?: string | null;
   createdAt?: string | null;
   condition?: string | null;
 };
@@ -140,6 +144,28 @@ const CollectionPage = () => {
 
   const token = loginResult?.token;
 
+  const handleRevisePrice = async (itemId: number, newPrice: number) => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/revise-listing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ item_id: itemId, new_price: newPrice })
+      });
+      if (res.ok) {
+        setItems(prev =>
+          prev.map(item =>
+            item.id === itemId
+              ? { ...item, listingPrice: newPrice, lastPriceChangeDate: new Date().toISOString() }
+              : item
+          )
+        );
+      }
+    } catch (err) {
+      console.error("[CollectionPage] Revise price failed:", err);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -200,7 +226,11 @@ const CollectionPage = () => {
                 : typeof raw.createdAt === "string"
                   ? raw.createdAt
                   : null,
-            condition: typeof raw.condition === "string" ? raw.condition : null
+            condition: typeof raw.condition === "string" ? raw.condition : null,
+            listingPrice: typeof raw.listing_price === "number" ? raw.listing_price : null,
+            purchasePrice: typeof raw.purchase_price === "number" ? raw.purchase_price : null,
+            postedDate: typeof raw.posted_date === "string" ? raw.posted_date : null,
+            lastPriceChangeDate: typeof raw.last_price_change_date === "string" ? raw.last_price_change_date : null
           };
         });
 
@@ -365,7 +395,7 @@ const CollectionPage = () => {
             ) : (
               <div className="collection-grid">
                 {sectionItems.map(item => (
-                  <CollectionCard key={item.id} item={item} to={`/collection/item/${item.id}`} />
+                  <CollectionCard key={item.id} item={item} to={`/collection/item/${item.id}`} onRevisePrice={handleRevisePrice} />
                 ))}
               </div>
             )}
