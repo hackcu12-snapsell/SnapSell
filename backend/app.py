@@ -177,7 +177,7 @@ def get_items():
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 """
-                SELECT i.id, i.name, i.description, i.category, i.brand, i.year, i.status, i.condition, i.sale_cost, i.posted_date, i.last_price_change_date,
+                SELECT i.id, i.name, i.description, i.category, i.brand, i.year, i.status, i.condition, i.purchase_price, i.listing_price, i.ebay_listing_url, i.posted_date, i.last_price_change_date,
                        (SELECT ii.url FROM item_image ii WHERE ii.item_id = i.id LIMIT 1) AS image_url,
                        (SELECT a.mean_value FROM appraisals a WHERE a.item_id = i.id ORDER BY a.date DESC LIMIT 1) AS mean_value,
                        (SELECT COALESCE(json_agg(to_json(lr)), '[]'::json)
@@ -195,7 +195,8 @@ def get_items():
 
         items = []
         for row in rows:
-            sale_cost = float(row["sale_cost"]) if row["sale_cost"] is not None else None
+            purchase_price = float(row["purchase_price"]) if row["purchase_price"] is not None else None
+            listing_price = float(row["listing_price"]) if row["listing_price"] is not None else None
             mean_val = float(row["mean_value"]) if row["mean_value"] is not None else None
             listings_raw = row.get("listings")
             if isinstance(listings_raw, str):
@@ -222,8 +223,9 @@ def get_items():
                 "year": row["year"],
                 "status": row["status"] or "inventory",
                 "condition": row.get("condition"),
-                "sale_cost": sale_cost,
-                "price": sale_cost,
+                "purchase_price": purchase_price,
+                "listing_price": listing_price,
+                "ebay_listing_url": row.get("ebay_listing_url"),
                 "image_url": row["image_url"],
                 "mean_value": mean_val,
                 "listings": listings,
@@ -452,7 +454,7 @@ def save_item():
     try:
         with conn.cursor() as cur:
             cur.execute(
-                """INSERT INTO items (userid, name, description, category, brand, year, status, condition, sale_cost)
+                """INSERT INTO items (userid, name, description, category, brand, year, status, condition, purchase_price)
                    VALUES (%s, %s, %s, %s, %s, %s, 'inventory', %s, %s) RETURNING id""",
                 (user_id, name, description, category, brand, year, condition, purchase_price),
             )
@@ -628,16 +630,17 @@ def list_on_ebay():
     ebay_item_id = result.get("item_id")
     listing_url  = f"https://sandbox.ebay.com/itm/{ebay_item_id}"
     print(f"[list-on-ebay] Listed item {item_id} on eBay: {listing_url}")
+    print(f"[list-on-ebay] listing_price={price}")
 
-    # Update items: status, listing URL, posted date
+    # Update items: status, listing URL, posted date, listing_price
     conn = get_conn()
     try:
         with conn.cursor() as cur:
             cur.execute(
                 """UPDATE items
-                   SET status = 'listed', ebay_listing_url = %s, posted_date = NOW()
+                   SET status = 'listed', ebay_listing_url = %s, posted_date = NOW(), listing_price = %s
                    WHERE id = %s""",
-                (listing_url, item_id),
+                (listing_url, price, item_id),
             )
         conn.commit()
     except Exception as e:

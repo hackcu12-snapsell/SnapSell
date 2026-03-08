@@ -8,8 +8,8 @@ import { API_URL } from "../data/constants";
 
 type RawItem = {
   status?: string;
-  price?: number | null;
-  sale_cost?: number | null;
+  purchase_price?: number | null;
+  listing_price?: number | null;
   mean_value?: number | null;
   name?: string;
   category?: string | null;
@@ -56,7 +56,7 @@ function computeStats(items: RawItem[]): Stats {
   const catMap: Record<string, number> = {};
 
   items.forEach(item => {
-    const val = Number(item.mean_value ?? item.price ?? item.sale_cost ?? 0);
+    const val = Number(item.mean_value ?? item.listing_price ?? 0);
     const st = item.status ?? "inventory";
 
     if (st === "inventory") {
