@@ -10,7 +10,7 @@ function getPool(): Pool {
 
   const requiredVars = ["DB_HOST", "DB_PORT", "DB_NAME", "DB_USER", "DB_PASSWORD"];
   for (const varName of requiredVars) {
-    if (!process.env[varName]) {
+    if (process.env[varName] == null) {
       throw new Error(`Missing required environment variable: ${varName}`);
     }
   }

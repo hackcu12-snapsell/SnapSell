@@ -4,32 +4,45 @@ import Modal from "../common/Modal/Modal";
 
 const MODAL_ID = "addItemModal";
 
-const AddItemModal = ({ handleClose }) => {
+const EMPTY_FIELDS = { name: "", description: "", category: "", brand: "", year: "" };
+
+const AddItemModal = ({ handleClose, onAppraisalReady }) => {
   const isOpen = useSelector(state => state.modalState[MODAL_ID]);
+  const tokenFromStore = useSelector(state => state.userState.loginResult?.token);
+  // Fallback to localStorage in case Redux hasn't rehydrated yet
+  const token = tokenFromStore || (() => {
+    try { return JSON.parse(localStorage.getItem("user") || "{}").token; } catch { return null; }
+  })();
 
   const [mode, setMode] = useState("photo");
+  // stage: "capture" | "review" | "saving"
+  const [stage, setStage] = useState("capture");
+
   const [cameraActive, setCameraActive] = useState(false);
   const [capturedFile, setCapturedFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [description, setDescription] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [cameraError, setCameraError] = useState(null);
+
+  // Review stage fields
+  const [fields, setFields] = useState(EMPTY_FIELDS);
+  const [condition, setCondition] = useState("");
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Auto-open camera when modal opens in photo mode
   useEffect(() => {
-    if (isOpen && mode === "photo" && !capturedFile) {
+    if (isOpen && mode === "photo" && stage === "capture" && !capturedFile) {
       startCamera();
     }
     if (!isOpen) stopCamera();
   }, [isOpen]);
 
-  // MUI Dialog lazy-mounts children: assign stream once video element is in the DOM
+  // Assign stream once video element is mounted (MUI Dialog lazy-mounts children)
   useEffect(() => {
     if (cameraActive && streamRef.current && videoRef.current) {
       videoRef.current.srcObject = streamRef.current;
@@ -78,7 +91,7 @@ const AddItemModal = ({ handleClose }) => {
     setPreview(URL.createObjectURL(file));
   };
 
-  const reset = () => {
+  const resetCapture = () => {
     stopCamera();
     setCapturedFile(null);
     setPreview(null);
@@ -93,44 +106,112 @@ const AddItemModal = ({ handleClose }) => {
     setCameraError(null);
     setDescription("");
     setPurchasePrice("");
+    setStage("capture");
+    setFields(EMPTY_FIELDS);
+    setCondition("");
     setMode("photo");
     handleClose(MODAL_ID);
   };
 
-  const handleSubmit = async () => {
+  const handleAnalyze = async () => {
     if (!capturedFile) return;
-    setLoading(true);
+    setAnalyzing(true);
     const body = new FormData();
     body.append("image", capturedFile);
     if (description.trim()) body.append("description", description.trim());
     try {
       const res = await fetch("/api/analyze-item", { method: "POST", body });
       const data = await res.json();
-      console.log("[AddItemModal] analyze-item result:", data);
-      console.log("[AddItemModal] purchase price:", purchasePrice);
+      const parsed = {
+        name: data.name || "",
+        description: data.description || description,
+        category: data.category || "",
+        brand: data.brand || "",
+        year: data.year || "",
+      };
+      setFields(parsed);
+      setCondition(data.condition || "");
+
+      if (data.needs_review) {
+        setStage("review");
+      } else {
+        // Confident identification — skip review and save immediately
+        await handleSave(parsed);
+      }
     } catch (err) {
       console.error("[AddItemModal] Analysis failed:", err);
     } finally {
-      setLoading(false);
+      setAnalyzing(false);
     }
   };
 
+  const handleSave = async (overrideFields = null) => {
+    const saveFields = overrideFields || fields;
+    if (!capturedFile || !saveFields.name.trim()) return;
+    setStage("saving");
+    const body = new FormData();
+    body.append("image", capturedFile);
+    body.append("name", saveFields.name.trim());
+    body.append("description", (saveFields.description || "").trim());
+    body.append("category", (saveFields.category || "").trim());
+    body.append("brand", (saveFields.brand || "").trim());
+    body.append("year", (saveFields.year || "").toString().trim());
+    body.append("purchase_price", purchasePrice || "0");
+    try {
+      const res = await fetch("/api/save-item", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error("[AddItemModal] Save failed:", data);
+        setStage("review");
+        return;
+      }
+      console.log("[AddItemModal] Saved item:", data.item_id, "| image:", data.image_url);
+      onAppraisalReady?.({
+        item_id:   data.item_id,
+        image_url: data.image_url,
+        preview,
+        condition,
+        item:      data.item,
+        appraisal: data.appraisal,
+      });
+      close();
+    } catch (err) {
+      console.error("[AddItemModal] Save error:", err);
+      setStage("review");
+    }
+  };
+
+  const setField = key => e => setFields(f => ({ ...f, [key]: e.target.value }));
+
+  // ── Footer buttons ──────────────────────────────────────────────────────────
+  const footerButtons = stage === "capture"
+    ? [{
+        text: analyzing ? "Analyzing…" : "Analyze Item",
+        variant: "contained",
+        primary: true,
+        disabled: !capturedFile || analyzing,
+        onClick: handleAnalyze,
+      }]
+    : [{
+        text: stage === "saving" ? "Saving…" : "Save & Appraise",
+        variant: "contained",
+        primary: true,
+        disabled: !fields.name.trim() || stage === "saving",
+        onClick: handleSave,
+      }];
+
   const titleEl = (
     <div style={styles.titleRow}>
-      <span>Add Item</span>
+      <span>
+        {stage === "review" ? "Review Item" : "Add Item"}
+      </span>
       <button style={styles.closeX} onClick={close} aria-label="Close">✕</button>
     </div>
   );
-
-  const footerButtons = [
-    {
-      text: loading ? "Analyzing…" : "Analyze Item",
-      variant: "contained",
-      onClick: handleSubmit,
-      disabled: !capturedFile || loading,
-      primary: true
-    }
-  ];
 
   return (
     <Modal
@@ -139,41 +220,26 @@ const AddItemModal = ({ handleClose }) => {
       style={{ maxWidth: "390px", width: "100%" }}
       footerButtons={footerButtons}
     >
-      {/* Sliding pill toggle */}
-      <div style={styles.toggleTrack}>
-        <div
-          style={{
-            ...styles.togglePill,
-            left: mode === "photo" ? "4px" : "calc(50% + 0px)"
-          }}
-        />
-        <button
-          style={styles.toggleBtn}
-          onClick={() => setMode("photo")}
-        >
-          <span style={{ position: "relative", zIndex: 1, color: mode === "photo" ? "#111" : "#aaa" }}>
-            Photo
-          </span>
-        </button>
-        <button
-          style={styles.toggleBtn}
-          onClick={() => setMode("manual")}
-        >
-          <span style={{ position: "relative", zIndex: 1, color: mode === "manual" ? "#111" : "#aaa" }}>
-            Manual
-          </span>
-        </button>
-      </div>
+      {/* Mode toggle — only visible on capture stage */}
+      {stage === "capture" && (
+        <div style={styles.toggleTrack}>
+          <div style={{ ...styles.togglePill, left: mode === "photo" ? "4px" : "calc(50% + 0px)" }} />
+          <button style={styles.toggleBtn} onClick={() => setMode("photo")}>
+            <span style={{ position: "relative", zIndex: 1, color: mode === "photo" ? "#111" : "#aaa" }}>Photo</span>
+          </button>
+          <button style={styles.toggleBtn} onClick={() => setMode("manual")}>
+            <span style={{ position: "relative", zIndex: 1, color: mode === "manual" ? "#111" : "#aaa" }}>Manual</span>
+          </button>
+        </div>
+      )}
 
-      {mode === "photo" && (
+      {/* ── CAPTURE STAGE ── */}
+      {stage === "capture" && mode === "photo" && (
         <>
-          {/* Viewfinder */}
           <div style={styles.viewfinder}>
             <video
               ref={videoRef}
-              autoPlay
-              playsInline
-              muted
+              autoPlay playsInline muted
               style={{ ...styles.viewfinderMedia, display: cameraActive ? "block" : "none" }}
             />
             {preview && !cameraActive && (
@@ -182,34 +248,22 @@ const AddItemModal = ({ handleClose }) => {
             {!cameraActive && !preview && cameraError && (
               <span style={styles.viewfinderPlaceholder}>{cameraError}</span>
             )}
-
-            {/* Shutter button overlaid on live feed */}
             {cameraActive && (
               <button style={styles.shutterBtn} onClick={capturePhoto} aria-label="Capture" />
             )}
-
-            {/* Retake overlay on preview */}
             {preview && !cameraActive && (
-              <button style={styles.retakeBtn} onClick={reset}>Retake</button>
+              <button style={styles.retakeBtn} onClick={resetCapture}>Retake</button>
             )}
           </div>
           <canvas ref={canvasRef} style={{ display: "none" }} />
 
-          {/* Upload button */}
           <div style={styles.uploadRow}>
             <button style={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
               Upload Photo
             </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              onChange={handleUpload}
-            />
+            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleUpload} />
           </div>
 
-          {/* Description */}
           <label style={styles.fieldLabel}>
             Description
             <textarea
@@ -221,13 +275,10 @@ const AddItemModal = ({ handleClose }) => {
             />
           </label>
 
-          {/* Purchase price */}
           <label style={styles.fieldLabel}>
             Purchase Price ($)
             <input
-              type="number"
-              min="0"
-              step="0.01"
+              type="number" min="0" step="0.01"
               value={purchasePrice}
               onChange={e => setPurchasePrice(e.target.value)}
               placeholder="0.00"
@@ -237,10 +288,57 @@ const AddItemModal = ({ handleClose }) => {
         </>
       )}
 
-      {mode === "manual" && (
-        <div style={styles.manualPlaceholder}>
-          Manual entry coming soon.
-        </div>
+      {stage === "capture" && mode === "manual" && (
+        <div style={styles.manualPlaceholder}>Manual entry coming soon.</div>
+      )}
+
+      {/* ── REVIEW STAGE ── */}
+      {(stage === "review" || stage === "saving") && (
+        <>
+          {preview && (
+            <div style={styles.reviewPreviewRow}>
+              <img src={preview} alt="item" style={styles.reviewPreview} />
+              {condition && <span style={styles.conditionBadge}>{condition}</span>}
+            </div>
+          )}
+
+          <label style={styles.fieldLabel}>
+            Name <span style={styles.required}>*</span>
+            <input
+              value={fields.name}
+              onChange={setField("name")}
+              placeholder="Item name"
+              style={{ ...styles.input, ...(fields.name.trim() ? {} : styles.inputError) }}
+            />
+          </label>
+
+          <label style={styles.fieldLabel}>
+            Description
+            <textarea
+              rows={3}
+              value={fields.description}
+              onChange={setField("description")}
+              placeholder="Description"
+              style={styles.textarea}
+            />
+          </label>
+
+          <div style={styles.twoCol}>
+            <label style={styles.fieldLabel}>
+              Category
+              <input value={fields.category} onChange={setField("category")} placeholder="e.g. Electronics" style={styles.input} />
+            </label>
+            <label style={styles.fieldLabel}>
+              Year
+              <input value={fields.year} onChange={setField("year")} placeholder="e.g. 2019" style={styles.input} />
+            </label>
+          </div>
+
+          <label style={styles.fieldLabel}>
+            Brand
+            <input value={fields.brand} onChange={setField("brand")} placeholder="Brand or manufacturer" style={styles.input} />
+          </label>
+        </>
       )}
     </Modal>
   );
@@ -261,8 +359,7 @@ const styles = {
     color: "#999",
     lineHeight: 1,
     padding: "2px 4px",
-    borderRadius: "4px",
-    transition: "color 0.15s"
+    borderRadius: "4px"
   },
   toggleTrack: {
     position: "relative",
@@ -271,8 +368,7 @@ const styles = {
     border: "1px solid rgba(255,255,255,0.15)",
     borderRadius: "8px",
     padding: "4px",
-    marginBottom: "14px",
-    gap: 0
+    marginBottom: "14px"
   },
   togglePill: {
     position: "absolute",
@@ -330,7 +426,6 @@ const styles = {
     cursor: "pointer",
     boxShadow: "0 2px 8px rgba(0,0,0,0.4)"
   },
-  shutterInner: {},
   retakeBtn: {
     position: "absolute",
     bottom: "10px",
@@ -367,6 +462,9 @@ const styles = {
     color: "#fff",
     marginBottom: "12px"
   },
+  required: {
+    color: "#ff6b6b"
+  },
   textarea: {
     background: "rgba(255,255,255,0.07)",
     border: "1px solid rgba(255,255,255,0.15)",
@@ -387,6 +485,37 @@ const styles = {
     width: "100%",
     fontFamily: "inherit",
     boxSizing: "border-box"
+  },
+  inputError: {
+    border: "1px solid #ff6b6b"
+  },
+  reviewPreviewRow: {
+    position: "relative",
+    marginBottom: "14px",
+    borderRadius: "8px",
+    overflow: "hidden",
+    height: "120px"
+  },
+  reviewPreview: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover"
+  },
+  conditionBadge: {
+    position: "absolute",
+    bottom: "8px",
+    right: "8px",
+    background: "rgba(0,0,0,0.6)",
+    color: "#fff",
+    fontSize: "0.78rem",
+    padding: "3px 8px",
+    borderRadius: "4px",
+    backdropFilter: "blur(4px)"
+  },
+  twoCol: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "10px"
   },
   manualPlaceholder: {
     padding: "40px 0",
