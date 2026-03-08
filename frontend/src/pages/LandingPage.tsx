@@ -1,6 +1,5 @@
 /** @module LandingPage */
 
-import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAppSelector } from "../redux/hooks";
@@ -12,11 +11,6 @@ const LandingPage = () => {
   const loginResult = useAppSelector(state => state.userState.loginResult);
   const isLoggedIn = Boolean(loginResult);
 
-  const buttonLabel = useMemo(() => {
-    if (isLoggedIn) return "Go to Snap Sell";
-    return "Get Started";
-  }, [isLoggedIn]);
-
   const handlePrimary = () => {
     if (isLoggedIn) {
       navigate("/snap");
@@ -27,30 +21,26 @@ const LandingPage = () => {
 
   return (
     <div className="landing-page">
-      <header className="landing-header">
-        <h1>SnapSell</h1>
-        <p className="subtitle">Snap a photo of an item and get a quick appraisal.</p>
-      </header>
-
-      <main className="landing-content">
-        <div className="landing-cards">
+      <div className="landing-right">
           <div className="landing-card">
-            <h2>Fast Appraisals</h2>
-            <p>Upload a photo and get an instant estimate based on condition, brand, and era.</p>
+            <h2>Snap & Sell</h2>
+            <p>Upload a photo and list it on eBay in minutes.</p>
           </div>
           <div className="landing-card">
-            <h2>Save Favorites</h2>
-            <p>Keep a history of items you’ve reviewed and revisit them later.</p>
+            <h2>Instant Appraisals</h2>
+            <p>Quickly determine the worth of your item using state of the art agentic workflows.</p>
           </div>
           <div className="landing-card">
-            <h2>Secure & Private</h2>
-            <p>We never share your photos without your permission.</p>
+            <h2> Manage Listings</h2>
+            <p>Keep track of your listings and get actionable insights.</p>
           </div>
-        </div>
-        <button className="btn-primary" onClick={handlePrimary}>
-          {buttonLabel}
+      </div>
+      <div className="landing-left">
+        <h1 className="landing-title">SnapSell</h1>
+        <button className="btn-primary landing-cta" onClick={handlePrimary}>
+          Get Started
         </button>
-      </main>
+      </div>
     </div>
   );
 };
