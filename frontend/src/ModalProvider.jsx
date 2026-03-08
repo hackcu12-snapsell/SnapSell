@@ -2,9 +2,8 @@
 
 import React from "react";
 import { useDispatch } from "react-redux";
-
-import Modal from "./common/Modal/Modal";
 import { toggleModal } from "./redux/actions/modalActions";
+import AddItemModal from "./modals/AddItemModal";
 
 const ModalProvider = () => {
   const dispatch = useDispatch();
@@ -15,19 +14,7 @@ const ModalProvider = () => {
 
   return (
     <>
-      <Modal
-        modal_id="globalModal"
-        title="Add Item"
-        footerButtons={[
-          {
-            text: "Cancel",
-            variant: "contained",
-            onClick: () => handleClose("globalModal")
-          }
-        ]}
-      >
-        <p>This is the Add Item modal content.</p>
-      </Modal>
+      <AddItemModal handleClose={handleClose} />
     </>
   );
 };

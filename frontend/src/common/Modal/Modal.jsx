@@ -24,13 +24,15 @@ const Modal = ({ modal_id, title, children, footerButtons, style }) => {
           maxWidth: style?.maxWidth || "600px",
           display: "flex",
           flexDirection: "column",
-          maxHeight: "80vh"
+          maxHeight: "80vh",
+          background: "#1c1c1e",
+          color: "#fff"
         }
       }}
     >
-      <DialogTitle sx={{ paddingBottom: 0 }}>
+      <DialogTitle sx={{ paddingBottom: 0, color: "#fff" }}>
         {title}
-        <Divider sx={{ marginTop: 1 }} />
+        <Divider sx={{ marginTop: 1, borderColor: "rgba(255,255,255,0.12)" }} />
       </DialogTitle>
       <DialogContent
         sx={{
@@ -40,35 +42,42 @@ const Modal = ({ modal_id, title, children, footerButtons, style }) => {
       >
         {children}
       </DialogContent>
-      <Divider sx={{ marginBottom: 1 }} />
+      <Divider sx={{ marginBottom: 1, borderColor: "rgba(255,255,255,0.12)" }} />
       <DialogActions
         sx={{
           justifyContent: "flex-end",
-          flexShrink: 0
+          flexShrink: 0,
+          padding: "12px 16px"
         }}
       >
-        {(footerButtons ?? []).map(({ text, onClick, variant }, index) => (
+        {(footerButtons ?? []).map(({ text, onClick, variant, disabled, primary }, index) => (
           <Button
             key={index}
             variant={variant}
             onClick={onClick}
+            disabled={disabled}
             sx={{
               marginLeft: 1,
+              ...(primary && {
+                backgroundColor: "#f0f0f0",
+                border: "none",
+                color: "#111",
+                fontWeight: 700,
+                padding: "8px 24px",
+                "&:hover": { backgroundColor: "#fff" },
+                "&.Mui-disabled": { backgroundColor: "rgba(255,255,255,0.12)", color: "#555" }
+              }),
               ...(text === "Cancel" && {
                 backgroundColor: "#db584f",
                 border: "none",
                 color: "white",
-                "&:hover": {
-                  backgroundColor: "darkred"
-                }
+                "&:hover": { backgroundColor: "darkred" }
               }),
               ...(text === "Save" && {
                 backgroundColor: "#3498db",
                 border: "none",
                 color: "white",
-                "&:hover": {
-                  backgroundColor: "#2980b9"
-                }
+                "&:hover": { backgroundColor: "#2980b9" }
               })
             }}
           >

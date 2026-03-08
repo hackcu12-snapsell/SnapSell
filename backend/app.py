@@ -52,7 +52,10 @@ def _stop_price_agent() -> None:
     if _node_proc and _node_proc.poll() is None:
         _node_proc.terminate()
 
-_start_price_agent()
+# Only start in the main process — Flask debug mode spawns a reloader child
+# that would try to bind port 3001 a second time.
+if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+    _start_price_agent()
 
 from ebay import post_listing, upload_image
 from auth import auth_bp
@@ -91,21 +94,25 @@ def analyze_item():
     image_bytes = file.read()
     mime_type = file.content_type or "image/jpeg"
 
-    prompt = """Analyze the item in this photo and return ONLY a valid JSON object with these fields:
-{
+    extra = request.form.get("description", "").strip()
+    extra_context = f"\n\nAdditional context from the user: {extra}" if extra else ""
+
+    prompt = f"""Analyze the item in this photo, described by the user as: ({extra_context}) and return ONLY a valid JSON object with these fields:
+
+{{
   "name": "short item name",
   "description": "detailed description of the item",
   "condition": "one of: New | Like New | Good | Fair | Poor",
   "category": "item category (e.g. Electronics, Clothing, Collectibles, Tools, Furniture, Shoes, etc)",
   "brand": "brand or manufacturer if identifiable, or null",
   "year": "estimated year or era of manufacture if relevant (e.g. '2019', '1980s'), or null"
-}
+}}
 Return ONLY the JSON object. No markdown, no explanation."""
 
     image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.5-pro",
         contents=[image_part, prompt],
     )
 
