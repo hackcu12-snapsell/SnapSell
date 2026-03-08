@@ -1,5 +1,39 @@
-import json
 import os
+
+
+# Must set SSL cert path before any HTTPS/SSL-using imports (fixes Windows/Anaconda
+# FileNotFoundError in ssl.create_default_context when loading google-genai).
+try:
+   import certifi
+   _cacert = certifi.where()
+   if _cacert and os.path.exists(_cacert):
+       os.environ["SSL_CERT_FILE"] = _cacert
+       os.environ["REQUESTS_CA_BUNDLE"] = _cacert
+except Exception:
+   pass
+
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+# On Windows/Anaconda, ssl.create_default_context() can raise FileNotFoundError
+# because the default CA path is missing. Patch it to use certifi's bundle on failure.
+import ssl
+_ssl_create_default_context = ssl.create_default_context
+def _create_default_context_with_certifi(*args, **kwargs):
+   try:
+       return _ssl_create_default_context(*args, **kwargs)
+   except FileNotFoundError:
+       import certifi
+       ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+       ctx.load_verify_locations(certifi.where())
+       return ctx
+ssl.create_default_context = _create_default_context_with_certifi
+
+
+import json
 import re
 import subprocess
 import atexit
@@ -11,13 +45,9 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from google import genai
 from google.genai import types
-from dotenv import load_dotenv
 import requests as http_requests
-
-# Load environment variables from .env before importing modules that rely on them
-load_dotenv()
-
 # ─── Price-agent subprocess ────────────────────────────────────────────────────
+
 
 _node_proc: subprocess.Popen | None = None
 
