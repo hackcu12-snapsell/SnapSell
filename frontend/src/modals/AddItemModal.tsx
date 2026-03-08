@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useAppSelector } from "../redux/hooks";
 import Modal from "../common/Modal/Modal";
+import LoadingScreen from "../common/LoadingScreen";
 
 const MODAL_ID = "addItemModal";
 
@@ -282,6 +283,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
     </div>
   );
 
+  const isLoading = analyzing || stage === "saving";
+
   return (
     <Modal
       modal_id={MODAL_ID}
@@ -289,6 +292,9 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
       style={{ maxWidth: "390px", width: "100%" }}
       footerButtons={footerButtons}
     >
+      <div style={{ position: "relative", minHeight: isLoading ? "300px" : undefined }}>
+      {isLoading && <LoadingScreen contained backgroundColor="#1a1a1a" />}
+
       {/* Mode toggle — only visible on capture stage */}
       {stage === "capture" && (
         <div style={styles.toggleTrack}>
@@ -448,8 +454,22 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
               style={styles.input}
             />
           </label>
+
+          <label style={styles.fieldLabel}>
+            Purchase Price ($)
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={purchasePrice}
+              onChange={e => setPurchasePrice(e.target.value)}
+              placeholder="0.00"
+              style={styles.input}
+            />
+          </label>
         </>
       )}
+      </div>
     </Modal>
   );
 };

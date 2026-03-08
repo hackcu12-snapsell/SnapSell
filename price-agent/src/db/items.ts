@@ -14,7 +14,7 @@ export async function getItemById(id: string): Promise<DbItem | null> {
     user_id: String(row.userid),  // schema column is 'userid'
     name: row.name,
     description: row.description ?? null,
-    condition: null,               // schema has no condition column on items
+    condition: row.condition ?? null,
     category: row.category ?? null,
     brand: row.brand ?? null,
     year: row.year ? parseInt(row.year, 10) : null,

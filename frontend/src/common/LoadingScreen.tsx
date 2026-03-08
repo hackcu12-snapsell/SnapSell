@@ -3,8 +3,9 @@ import React, { useState, useEffect } from "react";
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface LoadingScreenProps {
-  onComplete?: () => void; // called when the component unmounts (loading done)
-  backgroundColor?: string; // default "#F5F2EE"
+  onComplete?: () => void;    // called when the component unmounts (loading done)
+  backgroundColor?: string;   // default "#F5F2EE"
+  contained?: boolean;        // position:absolute filling the nearest relative parent instead of full-screen fixed
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -152,13 +153,26 @@ const CSS = `
     .ls-stage       { height: 96px; }
     .ls-text        { font-size: 14px; bottom: 8vh; }
   }
+
+  /* ── Contained mode: fills the nearest position:relative parent ── */
+
+  .ls-root--contained {
+    position: absolute;
+    z-index: 10;
+  }
+  .ls-root--contained .ls-text {
+    position: absolute;
+    bottom: 8%;
+    font-size: 13px;
+  }
 `;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function LoadingScreen({
   onComplete,
-  backgroundColor = "#F5F2EE"
+  backgroundColor = "#F5F2EE",
+  contained = false,
 }: LoadingScreenProps): React.ReactElement {
   const [emojiIndex, setEmojiIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("enter");
@@ -211,7 +225,7 @@ export default function LoadingScreen({
       {/* Self-contained styles: rendered inline so they're present on frame 1 */}
       <style>{CSS}</style>
 
-      <div className="ls-root" style={{ backgroundColor }}>
+      <div className={`ls-root${contained ? " ls-root--contained" : ""}`} style={{ backgroundColor }}>
         <div className="ls-stage">
           {/*
             key={emojiIndex} forces React to mount a fresh element for each
