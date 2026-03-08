@@ -10,11 +10,11 @@ export async function getItemById(id: string): Promise<DbItem | null> {
 
   const row = result.rows[0];
   return {
-    id: row.id,
-    user_id: row.user_id,
+    id: String(row.id),
+    user_id: String(row.userid),  // schema column is 'userid'
     name: row.name,
     description: row.description ?? null,
-    condition: row.condition ?? null,
+    condition: null,               // schema has no condition column on items
     category: row.category ?? null,
     brand: row.brand ?? null,
     year: row.year ? parseInt(row.year, 10) : null,

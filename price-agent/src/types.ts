@@ -118,11 +118,9 @@ export interface AppraisalWriteInput {
   value_high: number | null;
   value_confidence: number | null;
   volume_score: number | null;
-  reasonings: string;        // non-empty always — explain failure if values are null
+  reasonings: string;
   caveats: string | null;
-  agents_used: string[];
-  agents_failed: string[];
-  raw_agent_output: PriceAgentOutput;
+  recommendation: string;
   listing_references: ListingReferenceWriteInput[];
 }
 
@@ -131,8 +129,6 @@ export interface ListingReferenceWriteInput {
   source: string;
   price: number;
   condition: string | null;
-  title: string | null;
-  data_type: DataType;
 }
 
 // ─── Buy / Haggle / Pass output ───────────────────────────────────────────────

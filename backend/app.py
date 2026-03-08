@@ -1,15 +1,58 @@
 import json
+import os
 import re
+import subprocess
+import atexit
+import time
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-import os
+import requests as http_requests
 
 # Load environment variables from .env before importing modules that rely on them
 load_dotenv()
+
+# ─── Price-agent subprocess ────────────────────────────────────────────────────
+
+_node_proc: subprocess.Popen | None = None
+
+def _start_price_agent() -> None:
+    """Spawn the Node price-agent server unless PRICE_AGENT_URL points elsewhere."""
+    global _node_proc
+
+    # If an external URL is set, assume the service is managed elsewhere.
+    if os.environ.get("PRICE_AGENT_EXTERNAL"):
+        return
+
+    agent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "price-agent"))
+
+    # Prefer pre-compiled JS (production); fall back to ts-node (dev).
+    dist_entry = os.path.join(agent_dir, "dist", "server.js")
+    if os.path.exists(dist_entry):
+        cmd = ["node", dist_entry]
+    else:
+        cmd = ["npx", "ts-node", "src/server.ts"]
+
+    _node_proc = subprocess.Popen(cmd, cwd=agent_dir)
+    atexit.register(_stop_price_agent)
+
+    # Wait until the server accepts connections (max 15s).
+    price_agent_url = os.environ.get("PRICE_AGENT_URL", "http://localhost:3001")
+    for _ in range(30):
+        try:
+            http_requests.get(price_agent_url, timeout=0.5)
+            break
+        except Exception:
+            time.sleep(0.5)
+
+def _stop_price_agent() -> None:
+    if _node_proc and _node_proc.poll() is None:
+        _node_proc.terminate()
+
+_start_price_agent()
 
 from ebay import post_listing, upload_image
 from auth import auth_bp
@@ -103,6 +146,33 @@ def post_listing_route():
         verify=verify,
     )
     return jsonify(result)
+
+
+PRICE_AGENT_URL = os.environ.get("PRICE_AGENT_URL", "http://localhost:3001")
+
+
+@app.route("/api/appraiseItem", methods=["POST"])
+def appraise_item():
+    data = request.get_json(silent=True) or {}
+    item_id = data.get("item_id")
+    if not item_id:
+        return jsonify({"error": "item_id required"}), 400
+
+    try:
+        resp = http_requests.post(
+            f"{PRICE_AGENT_URL}/appraise",
+            json={"item_id": str(item_id)},
+            timeout=90,
+        )
+    except http_requests.exceptions.RequestException as e:
+        return jsonify({"error": f"Price agent unavailable: {e}"}), 500
+
+    if resp.status_code == 404:
+        return jsonify({"error": "Item not found"}), 404
+    if not resp.ok:
+        return jsonify({"error": "Appraisal pipeline failed"}), 500
+
+    return jsonify(resp.json()), 201
 
 
 if __name__ == "__main__":
