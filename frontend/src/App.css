@@ -356,6 +356,10 @@ pre {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.auth-card h2 {
+  margin: 0 0 1.25rem;
+}
+
 .auth-form {
   display: flex;
   flex-direction: column;

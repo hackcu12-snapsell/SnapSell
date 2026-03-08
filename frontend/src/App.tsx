@@ -73,11 +73,11 @@ export default function App() {
 
   const MainLayout = ({ children }: { children: ReactNode }) => {
     const location = useLocation();
-    const isLandingPage = location.pathname === "/";
+    const hideNavbar = ["/", "/signin", "/signup"].includes(location.pathname);
 
     return (
       <div>
-        {!isLandingPage && <Navbar isLoggedIn={isLoggedIn} onLogout={handleLogout} />}
+        {!hideNavbar && <Navbar isLoggedIn={isLoggedIn} onLogout={handleLogout} />}
         {children}
       </div>
     );
