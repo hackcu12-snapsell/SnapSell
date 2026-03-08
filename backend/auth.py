@@ -13,9 +13,35 @@ JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_EXPIRY_DAYS = 7
 
 
+def get_current_user_id():
+    """Return user id (int) from Authorization Bearer token, or None if missing/invalid."""
+    auth = request.headers.get("Authorization")
+    token = None
+    if auth and auth.startswith("Bearer "):
+        token = auth[7:].strip()
+    if not token:
+        # Fallback: some proxies strip Authorization; allow X-Auth-Token
+        token = request.headers.get("X-Auth-Token")
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        sub = payload.get("sub")
+        return int(sub) if sub is not None else None
+    except jwt.ExpiredSignatureError:
+        print("[auth] Token expired")
+        return None
+    except jwt.InvalidTokenError as e:
+        print(f"[auth] Invalid token: {type(e).__name__}")
+        return None
+    except (ValueError, TypeError) as e:
+        print(f"[auth] Token decode error: {e}")
+        return None
+
+
 def _make_token(user_id: int) -> str:
     payload = {
-        "sub": user_id,
+        "sub": str(user_id),  # JWT spec expects sub to be a string
         "exp": datetime.now(timezone.utc) + timedelta(days=JWT_EXPIRY_DAYS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")

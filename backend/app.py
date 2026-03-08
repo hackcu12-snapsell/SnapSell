@@ -58,12 +58,15 @@ if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
     _start_price_agent()
 
 from ebay import post_listing, upload_image
-from auth import auth_bp
+from auth import auth_bp, get_current_user_id
 from fraud import fraud_bp
+from db import get_conn, release_conn
+from psycopg2.extras import RealDictCursor
 from category import resolve_category
 
 app = Flask(__name__)
-CORS(app)
+# Explicitly allow Authorization header on cross-origin requests (frontend :5173 → backend :5001)
+CORS(app, allow_headers=["Content-Type", "Authorization"])
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(fraud_bp)
@@ -83,6 +86,73 @@ def parse_json_response(text: str) -> dict:
 @app.route("/")
 def home():
     return "SnapSell API"
+
+
+@app.route("/items", methods=["GET"])
+def get_items():
+    """Return all items for the current user (requires Bearer token)."""
+    user_id = get_current_user_id()
+    if user_id is None:
+        has_auth = "Authorization" in request.headers or "X-Auth-Token" in request.headers
+        print(f"[GET /items] 401 Unauthorized (auth header present: {has_auth})")
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT i.id, i.name, i.description, i.category, i.brand, i.year, i.status, i.sale_cost,
+                       (SELECT ii.url FROM item_image ii WHERE ii.item_id = i.id LIMIT 1) AS image_url,
+                       (SELECT a.mean_value FROM appraisals a WHERE a.item_id = i.id ORDER BY a.date DESC LIMIT 1) AS mean_value,
+                       (SELECT COALESCE(json_agg(to_json(lr)), '[]'::json)
+                        FROM (SELECT lr.id, lr.url, lr.condition, lr.price
+                              FROM listing_reference lr
+                              WHERE lr.appraisal_id = (SELECT a.id FROM appraisals a WHERE a.item_id = i.id ORDER BY a.date DESC LIMIT 1)
+                              ORDER BY lr.id) lr) AS listings
+                FROM items i
+                WHERE i.userid = %s
+                ORDER BY i.id
+                """,
+                (user_id,),
+            )
+            rows = cur.fetchall()
+
+        items = []
+        for row in rows:
+            sale_cost = float(row["sale_cost"]) if row["sale_cost"] is not None else None
+            mean_val = float(row["mean_value"]) if row["mean_value"] is not None else None
+            listings_raw = row.get("listings")
+            if isinstance(listings_raw, str):
+                listings_raw = json.loads(listings_raw) if listings_raw else []
+            elif listings_raw is None:
+                listings_raw = []
+            listings = []
+            for rec in listings_raw:
+                if isinstance(rec, dict):
+                    price = rec.get("price")
+                    listings.append({
+                        "url": rec.get("url") or "",
+                        "condition": rec.get("condition") or "",
+                        "price": float(price) if price is not None else None,
+                    })
+            items.append({
+                "id": row["id"],
+                "name": row["name"],
+                "description": row["description"],
+                "category": row["category"],
+                "brand": row["brand"],
+                "year": row["year"],
+                "status": row["status"] or "inventory",
+                "sale_cost": sale_cost,
+                "price": sale_cost,
+                "image_url": row["image_url"],
+                "mean_value": mean_val,
+                "listings": listings,
+            })
+        return jsonify({"items": items})
+    finally:
+        release_conn(conn)
 
 
 @app.route("/api/analyze-item", methods=["POST"])

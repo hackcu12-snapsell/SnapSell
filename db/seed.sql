@@ -1,7 +1,7 @@
 -- USERS
 INSERT INTO users (email, username, password_hash)
 VALUES 
-('ben@gmail.com', 'beng', 'password'),
+('test@test.com', 'test', '$2b$12$9GyUJjZ6kxEucK9VTGvPcO8infrDoGWkv70ndWpfjBMQiChaFe5qi'),
 ('harrison@gmail.com', 'harg', 'password');
 
 
