@@ -1,0 +1,27 @@
+{
+  "name": "price-agent",
+  "version": "1.0.0",
+  "description": "Price Search Agent System — Step 2 of the SnapSell appraisal pipeline",
+  "main": "dist/agents/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:synthesis": "ts-node src/scripts/test-synthesis-llm.ts",
+    "dev": "ts-node src/agents/index.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "node-fetch": "^3.3.2",
+    "pg": "^8.11.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.0.0",
+    "@types/node": "^20.0.0",
+    "@types/pg": "^8.11.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}
