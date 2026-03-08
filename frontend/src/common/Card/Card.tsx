@@ -3,7 +3,11 @@ import CardHeader from "../CardHeader/CardHeader";
 
 import "./Card.css";
 
-const Card = ({ children }) => {
+export interface CardProps {
+  children?: React.ReactNode;
+}
+
+const Card: React.FC<CardProps> = ({ children }) => {
   // Extract CardHeader and all other children
   const header = React.Children.toArray(children).find(
     child => React.isValidElement(child) && child.type === CardHeader

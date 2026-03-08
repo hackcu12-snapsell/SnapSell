@@ -1,13 +1,28 @@
 import React from "react";
 import { Button as MuiButton } from "@mui/material";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 
-const Button = props => {
-  const { children, hasShadow = false, onClick, variant = "contained" } = props;
+export type ButtonVariant = "contained" | "outlined" | "accent";
+
+export interface ButtonProps {
+  children: React.ReactNode;
+  hasShadow?: boolean;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  variant?: ButtonVariant;
+}
+
+// Create motion-enabled MUI button once (not per render)
+const MotionButton = motion(MuiButton);
+
+const Button: React.FC<ButtonProps> = ({
+  children,
+  hasShadow = false,
+  onClick,
+  variant = "contained"
+}) => {
   const [isPressed, setIsPressed] = React.useState(false);
 
-  // Animation variants
-  const buttonVariants = {
+  const buttonVariants: Variants = {
     initial: {
       scale: 1,
       boxShadow: hasShadow ? "0px 2px 4px rgba(0, 0, 0, 0.1)" : "none"
@@ -22,15 +37,13 @@ const Button = props => {
     }
   };
 
-  // Text animation variants
-  const textVariants = {
+  const textVariants: Variants = {
     initial: { y: 0 },
     hover: { y: -1 },
     tap: { y: 1 }
   };
 
-  // Ripple effect animation
-  const rippleVariants = {
+  const rippleVariants: Variants = {
     initial: {
       opacity: 0.8,
       scale: 0
@@ -40,7 +53,7 @@ const Button = props => {
       scale: 5,
       transition: {
         duration: 0.8,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     }
   };
@@ -75,7 +88,6 @@ const Button = props => {
     }
   };
 
-  // Special styles for "Scan Item" and "Manual Add" buttons
   const accentStyles = {
     ...commonStyles,
     border: "none",
@@ -94,10 +106,7 @@ const Button = props => {
     buttonStyles = accentStyles;
   }
 
-  // Create a motion component from MUI Button
-  const MotionButton = motion(MuiButton);
-
-  const handleClick = e => {
+  const handleClick: React.MouseEventHandler<HTMLButtonElement> = e => {
     setIsPressed(true);
     setTimeout(() => setIsPressed(false), 800);
     if (onClick) onClick(e);
@@ -109,7 +118,6 @@ const Button = props => {
       variant={variant === "accent" ? "contained" : variant}
       disableElevation={!hasShadow}
       sx={buttonStyles}
-      component={motion.button}
       initial="initial"
       whileHover="hover"
       whileTap="tap"

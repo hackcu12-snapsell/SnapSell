@@ -1,12 +1,22 @@
-/** @module CardHeader.jsx */
+/** @module CardHeader.tsx */
 
 import React from "react";
-
-import { Button } from "../../common";
+import Button, { type ButtonVariant } from "../Button/Button";
 
 import "./CardHeader.css";
 
-const CardHeader = ({ text, buttons }) => {
+export interface CardHeaderButton {
+  text: string;
+  onClick?: () => void;
+  variant?: ButtonVariant;
+}
+
+export interface CardHeaderProps {
+  text: string;
+  buttons?: CardHeaderButton[];
+}
+
+const CardHeader: React.FC<CardHeaderProps> = ({ text, buttons }) => {
   return (
     <div className="card-header">
       <div className="header-text">{text}</div>
