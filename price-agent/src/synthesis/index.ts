@@ -91,16 +91,14 @@ APPRAISAL RULES:
    - Two or more exact matches from any source: confidence ≥ 0.55.
    - High price variance or very few comps: reduce confidence accordingly, but don't over-penalise single high-quality matches.
 6. volume_score: 0.0–1.0 where 1.0 = 20+ strong comps, 0.0 = no comps.
-7. Recommendation logic:
-   If an asking price was provided:
+7. Recommendation: Prefer an action (buy/haggle/pass) whenever you have any usable appraisal. Use "insufficient_data" ONLY when value_mid is null (no comps) or value_confidence is 0 (no reliable data). If you have value_mid and confidence > 0, always output buy/haggle/pass; express uncertainty in recommendation_reasoning (e.g. "Limited comps — consider verifying.") instead of returning insufficient_data.
+   If an asking price was provided and value_mid is not null:
    - value_mid >= asking * ${thresholds.BUY_RATIO} → "buy"
    - value_mid >= asking * ${thresholds.HAGGLE_LOW} → "haggle"
    - value_mid < asking * ${thresholds.PASS_RATIO} → "pass"
-   If NO asking price was provided, judge from market quality:
-   - value_confidence >= 0.45 AND value_mid is not null → "buy" (active market, worth listing)
-   - value_confidence >= ${thresholds.MIN_CONFIDENCE_TO_RECOMMEND} AND value_mid is not null → "haggle" (moderate data, price carefully)
-   - Otherwise → "insufficient_data"
-   Always → "insufficient_data" when value_confidence < ${thresholds.MIN_CONFIDENCE_TO_RECOMMEND} or value_mid is null.
+   If NO asking price was provided but value_mid is not null and confidence > 0:
+   - Prefer  "buy" (worth listing); do not use "insufficient_data".
+   Only use "insufficient_data" when value_mid is null or value_confidence is 0 (or effectively no comps).
 8. Be conservative. When data is noisy or sparse, widen the low–high range and reduce confidence.
 9. reasonings must cite specific sources and price points (e.g. "Based on 8 eBay listings ranging $120–$180..."). Keep reasonings to 3–5 sentences maximum.
 10. CRITICAL: Output valid JSON only. All string values on one line. No newlines inside strings. Inside any string value, escape double-quotes as \\" (backslash-quote).
