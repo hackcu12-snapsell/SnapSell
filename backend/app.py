@@ -360,6 +360,21 @@ def save_item():
     }), 201
 
 
+def _extract_missing_specifics(errors: list) -> list[str]:
+    """Parse eBay 'item specific X is missing' errors into a list of field names."""
+    missing = []
+    for err in errors:
+        if err.get("severity") == "Error":
+            msg = err.get("message", "")
+            m = re.search(r"The item specific (.+?)[\xa0\xc2\s]is missing", msg)
+            if m:
+                # Strip any residual non-ASCII encoding artifacts
+                field = re.sub(r"[^\x20-\x7E]+", "", m.group(1)).strip()
+                if field:
+                    missing.append(field)
+    return missing
+
+
 @app.route("/api/list-on-ebay", methods=["POST"])
 def list_on_ebay():
     user_id = _require_user()
@@ -367,11 +382,13 @@ def list_on_ebay():
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.get_json(silent=True) or {}
-    item_id  = data.get("item_id")
-    title    = (data.get("title") or "").strip()
-    desc     = (data.get("description") or "").strip()
-    price    = float(data.get("price") or 0)
-    condition = data.get("condition", "Good")
+    item_id       = data.get("item_id")
+    title         = (data.get("title") or "").strip()
+    desc          = (data.get("description") or "").strip()
+    price         = float(data.get("price") or 0)
+    condition     = data.get("condition", "Good")
+    item_specifics = data.get("item_specifics") or {}
+    print(f"[list-on-ebay] item_specifics received: {item_specifics}")
 
     if not item_id or not title or not price:
         return jsonify({"error": "item_id, title, and price are required"}), 400
@@ -412,6 +429,7 @@ def list_on_ebay():
 
     # Resolve category and post listing
     category_id = resolve_category(client, name=title, description=desc, category_hint=category_hint)
+    print(f"[list-on-ebay] Resolved category: {category_id}")
     try:
         result = post_listing(
             title=title,
@@ -419,13 +437,20 @@ def list_on_ebay():
             price=price,
             category_id=str(category_id),
             condition=condition,
+            item_specifics=item_specifics,
             image_urls=[ebay_image_url] if ebay_image_url else [],
             verify=False,
         )
     except Exception as e:
+        print(f"[list-on-ebay] post_listing exception: {e}")
         return jsonify({"error": f"eBay listing failed: {e}"}), 500
 
+    print(f"[list-on-ebay] eBay response: ack={result.get('ack')} item_id={result.get('item_id')} errors={result.get('errors')}")
+
     if result.get("ack") not in ("Success", "Warning"):
+        missing = _extract_missing_specifics(result.get("errors", []))
+        if missing:
+            return jsonify({"missing_specifics": missing}), 409
         return jsonify({"error": "eBay listing rejected", "details": result}), 500
 
     ebay_item_id = result.get("item_id")

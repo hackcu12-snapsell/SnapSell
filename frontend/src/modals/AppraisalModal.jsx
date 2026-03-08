@@ -16,12 +16,15 @@ const AppraisalModal = ({ handleClose, data }) => {
     try { return JSON.parse(localStorage.getItem("user") || "{}").token; } catch { return null; }
   })();
 
-  const [title, setTitle]       = useState("");
-  const [desc, setDesc]         = useState("");
-  const [price, setPrice]       = useState("");
-  const [condition, setCondition] = useState("Good");
-  const [posting, setPosting]   = useState(false);
-  const [error, setError]       = useState(null);
+  const [title, setTitle]             = useState("");
+  const [desc, setDesc]               = useState("");
+  const [price, setPrice]             = useState("");
+  const [condition, setCondition]     = useState("Good");
+  const [posting, setPosting]         = useState(false);
+  const [error, setError]             = useState(null);
+  // Missing item specifics required by eBay
+  const [missingSpecifics, setMissingSpecifics] = useState([]);
+  const [specificValues, setSpecificValues]     = useState({});
 
   // Populate fields when modal opens with new data
   useEffect(() => {
@@ -32,38 +35,63 @@ const AppraisalModal = ({ handleClose, data }) => {
       setCondition(data.condition || "Good");
       setError(null);
       setPosting(false);
+      setMissingSpecifics([]);
+      setSpecificValues({});
     }
   }, [isOpen, data]);
 
   const close = () => handleClose(MODAL_ID);
-
   const handleKeep = () => close();
+
+  const setSpecific = key => e =>
+    setSpecificValues(v => ({ ...v, [key]: e.target.value }));
+
+  // Pre-fill known specifics from item data
+  const buildSpecifics = () => {
+    const out = { ...specificValues };
+    if (data?.item?.brand && !out["Brand"]) out["Brand"] = data.item.brand;
+    return out;
+  };
 
   const handlePost = async () => {
     if (!price || !title) return;
     setPosting(true);
     setError(null);
+    const specifics = buildSpecifics();
+    console.log("[AppraisalModal] specificValues:", specificValues);
+    console.log("[AppraisalModal] item_specifics being sent:", specifics);
     try {
       const res = await fetch("/api/list-on-ebay", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          item_id:     data.item_id,
+          item_id:        data.item_id,
           title,
-          description: desc,
-          price:       parseFloat(price),
+          description:    desc,
+          price:          parseFloat(price),
           condition,
+          item_specifics: specifics,
         }),
       });
       const result = await res.json();
+
+      if (res.status === 409 && result.missing_specifics?.length) {
+        // eBay requires more fields — show inputs pre-filled with what we know
+        const known = buildSpecifics();
+        const initial = {};
+        result.missing_specifics.forEach(f => { initial[f] = known[f] || ""; });
+        setSpecificValues(initial);
+        setMissingSpecifics(result.missing_specifics);
+        setPosting(false);
+        return;
+      }
+
       if (!res.ok) {
         setError(result.error || "Listing failed");
         setPosting(false);
         return;
       }
+
       console.log("[AppraisalModal] Listed on eBay:", result.listing_url);
       close();
     } catch (err) {
@@ -200,6 +228,23 @@ const AppraisalModal = ({ handleClose, data }) => {
         </label>
       </div>
 
+      {missingSpecifics.length > 0 && (
+        <div style={styles.specificsBox}>
+          <p style={styles.specificsLabel}>eBay requires these fields to list:</p>
+          {missingSpecifics.map(field => (
+            <label key={field} style={styles.fieldLabel}>
+              {field}
+              <input
+                value={specificValues[field] || ""}
+                onChange={setSpecific(field)}
+                placeholder={`Enter ${field}`}
+                style={styles.input}
+              />
+            </label>
+          ))}
+        </div>
+      )}
+
       {error && <p style={styles.error}>{error}</p>}
     </Modal>
   );
@@ -267,6 +312,17 @@ const styles = {
     width: "100%", fontFamily: "inherit", cursor: "pointer"
   },
   twoCol: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" },
+  specificsBox: {
+    background: "rgba(255,200,50,0.07)",
+    border: "1px solid rgba(255,200,50,0.25)",
+    borderRadius: "8px",
+    padding: "12px",
+    marginBottom: "12px"
+  },
+  specificsLabel: {
+    fontSize: "0.78rem", color: "#f5c842", margin: "0 0 10px",
+    textTransform: "uppercase", letterSpacing: "0.06em"
+  },
   error: { color: "#ff6b6b", fontSize: "0.82rem", margin: "0" }
 };
 
