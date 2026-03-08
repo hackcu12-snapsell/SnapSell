@@ -1,11 +1,17 @@
-/** @module DetailLine.jsx */
+/** @module DetailLine.tsx */
 
 import React from "react";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 import "./DetailLine.css";
 
-const DetailLine = ({ title, isCollapsed, onToggleCollapse }) => {
+export interface DetailLineProps {
+  title: string;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
+}
+
+const DetailLine: React.FC<DetailLineProps> = ({ title, isCollapsed, onToggleCollapse }) => {
   return (
     <div className="detail-line">
       <div className="title-container" onClick={onToggleCollapse}>

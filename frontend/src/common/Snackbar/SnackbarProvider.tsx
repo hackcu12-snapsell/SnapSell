@@ -1,20 +1,20 @@
-/** @module SnackbarProvider.jsx */
+/** @module SnackbarProvider.tsx */
 
 import React from "react";
-import { useSelector, useDispatch } from "react-redux";
 import { Snackbar, Alert } from "@mui/material";
 import { removeSnackbar } from "../../redux/actions/snackbarActions";
+import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 
-const SnackbarProvider = () => {
-  const dispatch = useDispatch();
+const SnackbarProvider: React.FC = () => {
+  const dispatch = useAppDispatch();
   const {
     open,
     message,
     severity,
     autoHideDuration = 6000
-  } = useSelector(state => state.snackbarState);
+  } = useAppSelector(state => state.snackbarState);
 
-  const handleClose = (event, reason) => {
+  const handleClose = (_event: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === "clickaway") {
       return;
     }

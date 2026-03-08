@@ -1,13 +1,21 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/** @module SignUp */
+
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useDispatch } from "react-redux";
+
 import { signup, addLoginAuthentication } from "../../redux/actions/userActions";
 import { addSnackbar } from "../../redux/actions/snackbarActions";
+import { useAppDispatch } from "../../redux/hooks";
+
 import "../../App.css";
 
+type AuthResponse = {
+  success?: boolean;
+  error?: string;
+};
+
 const SignUp = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,14 +26,13 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      const response: any = await dispatch(
-        // @ts-expect-error some character descr
-        signup({ email, password })
-      );
-
-      if (response?.success) {
-        navigate("/snap");
-        return;
+      const response = (await dispatch(signup({ email, password }))) as unknown;
+      if (typeof response === "object" && response !== null && "success" in response) {
+        const res = response as AuthResponse;
+        if (res.success) {
+          navigate("/snap");
+          return;
+        }
       }
 
       // Fallback for demo mode (no backend)
@@ -39,10 +46,11 @@ const SignUp = () => {
         })
       );
       navigate("/snap");
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to sign up";
       dispatch(
         addSnackbar({
-          message: error?.message ?? "Failed to sign up",
+          message,
           severity: "error"
         })
       );

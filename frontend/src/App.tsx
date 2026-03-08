@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from "react";
+/** @module App */
+
+import { useEffect, useState, type ReactNode } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
 
 import { Navbar, SnackbarProvider } from "./common";
 import ModalProvider from "./ModalProvider";
@@ -13,17 +13,23 @@ import CollectionPage from "./pages/CollectionPage";
 import CollectionItemPage from "./pages/CollectionItemPage";
 import "./App.css";
 import { addLoginAuthentication, logout } from "./redux/actions/userActions";
+import { useAppDispatch, useAppSelector } from "./redux/hooks";
 
-const ProtectedRoute = ({ isLoggedIn, children }: any) => {
+type ProtectedRouteProps = {
+  isLoggedIn: boolean;
+  children: ReactNode;
+};
+
+const ProtectedRoute = ({ isLoggedIn, children }: ProtectedRouteProps) => {
   if (!isLoggedIn) {
     return <Navigate to="/signin" replace />;
   }
-  return children;
+  return <>{children}</>;
 };
 
 export default function App() {
-  const dispatch = useDispatch<any>();
-  const loginResult = useSelector((state: any) => state.userState.loginResult);
+  const dispatch = useAppDispatch();
+  const loginResult = useAppSelector(state => state.userState.loginResult);
   const [isLoggedIn, setIsLoggedIn] = useState(Boolean(loginResult));
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -65,7 +71,7 @@ export default function App() {
     );
   }
 
-  const MainLayout = ({ children }: any) => {
+  const MainLayout = ({ children }: { children: ReactNode }) => {
     const location = useLocation();
     const isLandingPage = location.pathname === "/";
 

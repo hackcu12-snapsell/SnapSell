@@ -1,10 +1,13 @@
+/** @module CollectionItemPage */
+
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-import "../App.css";
 import { API_URL } from "../data/constants";
 import { basicAPI } from "../utils/utilsThisApp";
+
+import "../App.css";
 
 type ItemStatus = "inventory" | "listed" | "sold" | "appraised";
 
