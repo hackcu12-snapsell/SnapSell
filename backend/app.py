@@ -428,14 +428,13 @@ def save_item():
         return jsonify({"error": "Unauthorized"}), 401
 
     image_file = request.files.get("image")
-    if not image_file:
-        return jsonify({"error": "image required"}), 400
-
-    # Save image locally
-    ext = (image_file.filename or "item.jpg").rsplit(".", 1)[-1].lower() or "jpg"
-    filename = f"{uuid.uuid4().hex}.{ext}"
-    image_file.save(os.path.join(UPLOAD_FOLDER, filename))
-    image_url = f"/uploads/{filename}"
+    image_url = None
+    if image_file:
+        # Save image locally
+        ext = (image_file.filename or "item.jpg").rsplit(".", 1)[-1].lower() or "jpg"
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        image_file.save(os.path.join(UPLOAD_FOLDER, filename))
+        image_url = f"/uploads/{filename}"
 
     name           = request.form.get("name", "").strip()
     description    = request.form.get("description", "").strip()
@@ -459,10 +458,12 @@ def save_item():
                 (user_id, name, description, category, brand, year, condition, purchase_price),
             )
             item_id = cur.fetchone()[0]
-            cur.execute(
-                "INSERT INTO item_image (item_id, url) VALUES (%s, %s)",
-                (item_id, image_url),
-            )
+            # Only add item_image row when we have a non-null URL (manual entry has no image)
+            if image_url is not None and str(image_url).strip():
+                cur.execute(
+                    "INSERT INTO item_image (item_id, url) VALUES (%s, %s)",
+                    (item_id, image_url),
+                )
             conn.commit()
     except Exception as e:
         conn.rollback()

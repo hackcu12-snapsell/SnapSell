@@ -48,6 +48,8 @@ const EMPTY_FIELDS: FieldValues = {
   condition: ""
 };
 
+const CONDITIONS = ["New", "Like New", "Good", "Fair", "Poor"] as const;
+
 const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalReady }) => {
   const isOpen = useAppSelector(state => Boolean(state.modalState[MODAL_ID]));
   const tokenFromStore = useAppSelector(state => state.userState.loginResult?.token);
@@ -76,6 +78,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
 
   const [fields, setFields] = useState<FieldValues>(EMPTY_FIELDS);
   const [condition, setCondition] = useState("");
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -171,6 +174,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
     setStage("capture");
     setFields(EMPTY_FIELDS);
     setCondition("");
+    setSaveError(null);
     setMode("photo");
     handleClose(MODAL_ID);
   };
@@ -210,10 +214,11 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
 
   const handleSave = async (overrideFields: FieldValues | null = null) => {
     const saveFields = overrideFields || fields;
-    if (!capturedFile || !saveFields.name.trim()) return;
+    if (!saveFields.name.trim()) return;
+    setSaveError(null);
     setStage("saving");
     const body = new FormData();
-    body.append("image", capturedFile);
+    if (capturedFile) body.append("image", capturedFile);
     body.append("name", saveFields.name.trim());
     body.append("description", (saveFields.description || "").trim());
     body.append("category", (saveFields.category || "").trim());
@@ -234,7 +239,9 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
 
       if (!res.ok) {
         console.error("[AddItemModal] Save failed:", data);
-        setStage("review");
+        const msg = (data?.error as string) || "Save failed. Please try again.";
+        setSaveError(msg);
+        setStage(mode === "manual" ? "capture" : "review");
         return;
       }
 
@@ -253,7 +260,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
       close();
     } catch (err) {
       console.error("[AddItemModal] Save error:", err);
-      setStage("review");
+      setSaveError("Network error. Please try again.");
+      setStage(mode === "manual" ? "capture" : "review");
     }
   };
 
@@ -267,15 +275,25 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
   // ── Footer buttons ──────────────────────────────────────────────────────────
   const footerButtons =
     stage === "capture"
-      ? [
-          {
-            text: analyzing ? "Analyzing…" : "Analyze Item",
-            variant: "contained" as const,
-            primary: true,
-            disabled: !capturedFile || analyzing,
-            onClick: handleAnalyze
-          }
-        ]
+      ? mode === "photo"
+        ? [
+            {
+              text: analyzing ? "Analyzing…" : "Analyze Item",
+              variant: "contained" as const,
+              primary: true,
+              disabled: !capturedFile || analyzing,
+              onClick: handleAnalyze
+            }
+          ]
+        : [
+            {
+              text: "Analyze Item",
+              variant: "contained" as const,
+              primary: true,
+              disabled: !fields.name.trim(),
+              onClick: () => handleSave(null)
+            }
+          ]
       : [
           {
             text: stage === "saving" ? "Saving…" : "Save & Appraise",
@@ -406,7 +424,91 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
       )}
 
       {stage === "capture" && mode === "manual" && (
-        <div style={styles.manualPlaceholder}>Manual entry coming soon.</div>
+        <>
+          <label style={styles.fieldLabel}>
+            Name <span style={styles.required}>*</span>
+            <input
+              value={fields.name}
+              onChange={setField("name")}
+              placeholder="Item name"
+              style={{ ...styles.input, ...(fields.name.trim() ? {} : styles.inputError) }}
+            />
+          </label>
+
+          <label style={styles.fieldLabel}>
+            Description
+            <textarea
+              rows={2}
+              value={fields.description}
+              onChange={setField("description")}
+              placeholder="Any extra details about the item..."
+              style={styles.textarea}
+            />
+          </label>
+
+          <label style={styles.fieldLabel}>
+            Category
+            <input
+              value={fields.category}
+              onChange={setField("category")}
+              placeholder="e.g. Electronics"
+              style={styles.input}
+            />
+          </label>
+
+          <label style={styles.fieldLabel}>
+            Brand
+            <input
+              value={fields.brand}
+              onChange={setField("brand")}
+              placeholder="Brand or manufacturer"
+              style={styles.input}
+            />
+          </label>
+
+          <div style={styles.twoCol}>
+            <label style={styles.fieldLabel}>
+              Year
+              <input
+                value={fields.year}
+                onChange={setField("year")}
+                placeholder="e.g. 2019"
+                style={styles.input}
+              />
+            </label>
+            <label style={styles.fieldLabel}>
+              Purchase Price ($)
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={purchasePrice}
+                onChange={e => setPurchasePrice(e.target.value)}
+                placeholder="0.00"
+                style={styles.input}
+              />
+            </label>
+          </div>
+
+          <label style={styles.fieldLabel}>
+            Condition
+            <select
+              value={condition || "Good"}
+              onChange={e => setCondition(e.target.value)}
+              style={styles.select}
+            >
+              {CONDITIONS.map(c => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {saveError && (
+            <p style={styles.saveError}>{saveError}</p>
+          )}
+        </>
       )}
 
       {/* ── REVIEW STAGE ── */}
@@ -645,6 +747,17 @@ const styles: Record<string, CSSProperties> = {
   inputError: {
     border: "1px solid #ff6b6b"
   },
+  select: {
+    background: "rgba(255,255,255,0.07)",
+    border: "1px solid rgba(255,255,255,0.15)",
+    borderRadius: "6px",
+    color: "#fff",
+    fontSize: "0.95rem",
+    padding: "8px",
+    width: "100%",
+    fontFamily: "inherit",
+    boxSizing: "border-box"
+  },
   reviewPreviewRow: {
     position: "relative",
     marginBottom: "14px",
@@ -673,10 +786,10 @@ const styles: Record<string, CSSProperties> = {
     gridTemplateColumns: "1fr 1fr",
     gap: "10px"
   },
-  manualPlaceholder: {
-    padding: "40px 0",
-    textAlign: "center",
-    color: "#777"
+  saveError: {
+    color: "#ff6b6b",
+    fontSize: "0.85rem",
+    margin: "8px 0 0"
   }
 };
 

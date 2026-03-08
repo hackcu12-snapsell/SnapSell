@@ -242,6 +242,9 @@ const CollectionPage = () => {
     items.forEach(item => {
       if (item.status === "inventory" || item.status === "listed" || item.status === "sold") {
         base[item.status].push(item);
+      } else if (item.status === "appraised") {
+        // Appraised items are still in inventory; show them in the Inventory section
+        base.inventory.push(item);
       }
     });
 
