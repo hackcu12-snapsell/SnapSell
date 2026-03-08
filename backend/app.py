@@ -39,6 +39,7 @@ import subprocess
 import atexit
 import time
 import uuid
+import concurrent.futures
 
 import jwt as pyjwt
 from flask import Flask, jsonify, request, send_from_directory
@@ -324,6 +325,76 @@ def appraise_item():
     return jsonify(resp.json()), 201
 
 
+def _run_appraisal_task(item_id: int) -> dict | None:
+    """Call price agent synchronously; returns response JSON or None."""
+    try:
+        resp = http_requests.post(
+            f"{PRICE_AGENT_URL}/appraise",
+            json={"item_id": str(item_id)},
+            timeout=90,
+        )
+        if resp.ok:
+            return resp.json()
+        print(f"[appraisal] Price agent {resp.status_code}: {resp.text[:200]}")
+    except Exception as e:
+        print(f"[appraisal] Error: {e}")
+    return None
+
+
+def _gemini_autofill_specifics(name: str, description: str, category: str,
+                                condition: str, missing: list[str]) -> dict:
+    """Use Gemini flash to suggest values for missing eBay item specifics."""
+    if not missing:
+        return {}
+    fields_str = ", ".join(f'"{f}"' for f in missing)
+    prompt = f"""Fill in required eBay item specifics for this listing. Return ONLY a JSON object.
+
+Item: {name}
+Description: {description[:200]}
+Category: {category or "unknown"}
+Condition: {condition}
+
+Required fields: [{fields_str}]
+
+Return a JSON object mapping each field to your best guess value. Use null if truly unknown."""
+    try:
+        resp = client.models.generate_content(model="gemini-2.5-flash", contents=[prompt])
+        suggestions = parse_json_response(resp.text)
+        return {k: v for k, v in suggestions.items() if v is not None and k in missing}
+    except Exception as e:
+        print(f"[verify] Gemini autofill failed: {e}")
+        return {}
+
+
+def _run_verify_task(name: str, description: str, category_hint: str,
+                     condition: str) -> tuple[str, list[str], dict]:
+    """Resolve category, run VerifyAddItem, autofill missing specifics with Gemini.
+    Returns (category_id_str, missing_specifics, suggestions)."""
+    try:
+        cat_id = resolve_category(
+            client, name=name, description=description, category_hint=category_hint
+        )
+        result = post_listing(
+            title=name[:80],
+            description=description or name,
+            price=9.99,          # placeholder — only used to discover required fields
+            category_id=str(cat_id),
+            condition=condition or "Good",
+            item_specifics={},
+            image_urls=[],
+            verify=True,
+        )
+        missing = _extract_missing_specifics(result.get("errors", []))
+        print(f"[verify] category={cat_id}, missing={missing}")
+        suggestions = _gemini_autofill_specifics(name, description, category_hint, condition, missing)
+        if suggestions:
+            print(f"[verify] Gemini suggestions: {suggestions}")
+        return str(cat_id), missing, suggestions
+    except Exception as e:
+        print(f"[verify] Failed: {e}")
+        return "", [], {}
+
+
 @app.route("/api/save-item", methods=["POST"])
 def save_item():
     user_id = _require_user()
@@ -340,13 +411,14 @@ def save_item():
     image_file.save(os.path.join(UPLOAD_FOLDER, filename))
     image_url = f"/uploads/{filename}"
 
-    name = request.form.get("name", "").strip()
-    description = request.form.get("description", "").strip()
-    category = request.form.get("category", "").strip() or None
-    brand = request.form.get("brand", "").strip() or None
-    year_raw = request.form.get("year", "").strip()
-    year = int(year_raw) if year_raw.isdigit() else None
+    name           = request.form.get("name", "").strip()
+    description    = request.form.get("description", "").strip()
+    category       = request.form.get("category", "").strip() or None
+    brand          = request.form.get("brand", "").strip() or None
+    year_raw       = request.form.get("year", "").strip()
+    year           = int(year_raw) if year_raw.isdigit() else None
     purchase_price = float(request.form.get("purchase_price", "0") or 0)
+    condition      = request.form.get("condition", "Good").strip()
 
     if not name:
         return jsonify({"error": "name required"}), 400
@@ -372,29 +444,20 @@ def save_item():
     finally:
         release_conn(conn)
 
-    # Trigger price agent and log result
+    print(f"\n[save-item] Item {item_id} ({name}) — running appraisal + VerifyAddItem in parallel...")
 
-    #this is the point where we could trigger the verify add item +place holder data 
-    print(f"\n[save-item] Item {item_id} saved — triggering appraisal...")
-    try:
-        resp = http_requests.post(
-            f"{PRICE_AGENT_URL}/appraise",
-            json={"item_id": str(item_id)},
-            timeout=90,
+    # Run price-agent appraisal and eBay preflight concurrently
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+        appraisal_future = ex.submit(_run_appraisal_task, item_id)
+        verify_future    = ex.submit(
+            _run_verify_task, name, description or name, category or "", condition
         )
-        if resp.ok:
-            a = resp.json()
-            print(f"[save-item] Appraisal complete for item {item_id}:")
-            print(f"  name:       {name}")
-            print(f"  low/mean/high: ${a.get('lowest_value')} / ${a.get('mean_value')} / ${a.get('high_value')}")
-            print(f"  confidence: {a.get('value_confidence')}")
-            print(f"  volume:     {a.get('volume')} comparable sales")
-            print(f"  reasoning:  {a.get('value_reasoning')}")
-            print(f"  decision:   {a.get('decision')}")
-        else:
-            print(f"[save-item] Price agent returned {resp.status_code} for item {item_id}: {resp.text[:200]}")
-    except Exception as e:
-        print(f"[save-item] Price agent error for item {item_id}: {e}")
+        appraisal_agent_result                = appraisal_future.result()
+        category_id_str, missing, suggestions = verify_future.result()
+
+    if appraisal_agent_result:
+        a = appraisal_agent_result
+        print(f"[save-item] Appraisal: ${a.get('lowest_value')} / ${a.get('mean_value')} / ${a.get('high_value')} | conf={a.get('value_confidence')}")
 
     # Read appraisal back from DB to return to frontend
     appraisal_data = None
@@ -427,8 +490,16 @@ def save_item():
     return jsonify({
         "item_id":   item_id,
         "image_url": image_url,
-        "item":      {"name": name, "description": description, "category": category, "brand": brand, "year": year},
+        "item":      {
+            "name": name, "description": description, "category": category,
+            "brand": brand, "year": year, "condition": condition,
+        },
         "appraisal": appraisal_data,
+        "preflight": {
+            "category_id":       category_id_str,
+            "missing_specifics": missing,
+            "suggestions":       suggestions,
+        },
     }), 201
 
 
@@ -459,7 +530,8 @@ def list_on_ebay():
     desc          = (data.get("description") or "").strip()
     price         = float(data.get("price") or 0)
     condition     = data.get("condition", "Good")
-    item_specifics = data.get("item_specifics") or {}
+    item_specifics        = data.get("item_specifics") or {}
+    category_id_preflight = (data.get("category_id") or "").strip()
     print(f"[list-on-ebay] item_specifics received: {item_specifics}")
 
     if not item_id or not title or not price:
@@ -499,9 +571,13 @@ def list_on_ebay():
             except Exception as e:
                 print(f"[list-on-ebay] Image upload failed (continuing without image): {e}")
 
-    # Resolve category and post listing
-    category_id = resolve_category(client, name=title, description=desc, category_hint=category_hint)
-    print(f"[list-on-ebay] Resolved category: {category_id}")
+    # Use pre-resolved category from preflight if available, otherwise resolve now
+    if category_id_preflight:
+        category_id = category_id_preflight
+        print(f"[list-on-ebay] Using pre-resolved category: {category_id}")
+    else:
+        category_id = resolve_category(client, name=title, description=desc, category_hint=category_hint)
+        print(f"[list-on-ebay] Resolved category: {category_id}")
     try:
         result = post_listing(
             title=title,

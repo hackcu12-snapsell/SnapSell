@@ -16,8 +16,13 @@ type AppraisalReadyData = {
   image_url?: string;
   preview?: string;
   condition?: string;
-  item?: { name?: string; description?: string };
+  item?: { name?: string; description?: string; brand?: string };
   appraisal?: Record<string, unknown>;
+  preflight?: {
+    category_id?: string;
+    missing_specifics?: string[];
+    suggestions?: Record<string, string>;
+  };
 };
 
 type Mode = "photo" | "manual";
@@ -203,6 +208,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
     body.append("brand", (saveFields.brand || "").trim());
     body.append("year", (saveFields.year || "").toString().trim());
     body.append("purchase_price", purchasePrice || "0");
+    body.append("condition", condition || "Good");
 
     try {
       const res = await fetch("/api/save-item", {
@@ -228,7 +234,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ handleClose, onAppraisalRea
         preview: preview ?? undefined,
         condition,
         item: (data.item as Record<string, unknown>) ?? undefined,
-        appraisal: (data.appraisal as Record<string, unknown>) ?? undefined
+        appraisal: (data.appraisal as Record<string, unknown>) ?? undefined,
+        preflight: (data.preflight as AppraisalReadyData["preflight"]) ?? undefined
       });
       close();
     } catch (err) {

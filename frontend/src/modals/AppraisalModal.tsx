@@ -30,6 +30,11 @@ type AppraisalData = {
     brand?: string;
   };
   appraisal?: AppraisalValues;
+  preflight?: {
+    category_id?: string;
+    missing_specifics?: string[];
+    suggestions?: Record<string, string>;
+  };
 };
 
 type AppraisalModalProps = {
@@ -78,8 +83,16 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
       setCondition((data.condition as Condition) ?? "Good");
       setError(null);
       setPosting(false);
-      setMissingSpecifics([]);
-      setSpecificValues({});
+
+      // Pre-populate specifics from preflight
+      const missing = data.preflight?.missing_specifics ?? [];
+      const suggestions = data.preflight?.suggestions ?? {};
+      setMissingSpecifics(missing);
+      const initial: Record<string, string> = {};
+      missing.forEach(f => {
+        initial[f] = suggestions[f] ?? (f === "Brand" ? (data.item?.brand ?? "") : "");
+      });
+      setSpecificValues(initial);
     }
   }, [isOpen, data]);
 
@@ -113,7 +126,8 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({ handleClose, data }) =>
           description: desc,
           price: parseFloat(price),
           condition,
-          item_specifics: specifics
+          item_specifics: specifics,
+          category_id: data?.preflight?.category_id ?? null
         })
       });
 
