@@ -351,7 +351,10 @@ const CollectionItemPage = () => {
 
       <div className="collection-item-header">
         <h1 className="collection-item-title">
-          {item.name} <span className="collection-item-status">({statusLabel})</span>
+          {item.name} <span className="collection-item-title-sep">|</span>{" "}
+          <span className="collection-item-status">
+            {item.status === "inventory" ? <><em>In</em> <em>{statusLabel}</em></> : <em>{statusLabel}</em>}
+          </span>
         </h1>
 
         <div className="collection-item-actions">
@@ -374,7 +377,7 @@ const CollectionItemPage = () => {
           )}
 
           {item.status === "listed" && (
-            <div style={{ position: "relative" }}>
+            <div className="collection-item-revise-wrap">
               <button
                 type="button"
                 className="collection-item-btn"
@@ -383,13 +386,7 @@ const CollectionItemPage = () => {
                 Revise Price
               </button>
               {revisePriceOpen && (
-                <div style={{
-                  position: "absolute", top: "calc(100% + 8px)", right: 0,
-                  background: "#1e1e1e", border: "1px solid rgba(255,255,255,0.15)",
-                  borderRadius: "10px", padding: "14px", width: "220px",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.5)", zIndex: 20,
-                  display: "flex", flexDirection: "column", gap: "10px"
-                }}>
+                <div className="collection-item-revise-dropdown">
                   <input
                     type="number"
                     min="0"
@@ -481,7 +478,7 @@ const CollectionItemPage = () => {
         <h3 className="collection-item-listings-title">Listing references</h3>
 
         {filteredListings.length > 0 ? (
-          <TableContainer component={Paper}>
+          <TableContainer component={Paper} className="collection-item-table-wrap">
             <Table size="small" aria-label="listing references">
               <TableHead>
                 <TableRow>
