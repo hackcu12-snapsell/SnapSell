@@ -99,11 +99,28 @@ from photo_enhance import enhance_bp
 from category import resolve_category
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*", "allow_headers": ["Content-Type", "Authorization"]}})
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(fraud_bp)
 app.register_blueprint(enhance_bp)
+
+
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        return "", 204, {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Auth-Token",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+        }
+
+
+@app.after_request
+def add_cors(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Auth-Token"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    return response
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -160,7 +177,7 @@ def get_items():
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 """
-                SELECT i.id, i.name, i.description, i.category, i.brand, i.year, i.status, i.condition, i.sale_cost,
+                SELECT i.id, i.name, i.description, i.category, i.brand, i.year, i.status, i.condition, i.sale_cost, i.posted_date, i.last_price_change_date,
                        (SELECT ii.url FROM item_image ii WHERE ii.item_id = i.id LIMIT 1) AS image_url,
                        (SELECT a.mean_value FROM appraisals a WHERE a.item_id = i.id ORDER BY a.date DESC LIMIT 1) AS mean_value,
                        (SELECT COALESCE(json_agg(to_json(lr)), '[]'::json)
@@ -194,6 +211,8 @@ def get_items():
                         "condition": rec.get("condition") or "",
                         "price": float(price) if price is not None else None,
                     })
+            posted = row.get("posted_date")
+            last_price_change = row.get("last_price_change_date")
             items.append({
                 "id": row["id"],
                 "name": row["name"],
@@ -208,7 +227,10 @@ def get_items():
                 "image_url": row["image_url"],
                 "mean_value": mean_val,
                 "listings": listings,
+                "posted_date": posted.isoformat() if posted else None,
+                "last_price_change_date": last_price_change.isoformat() if last_price_change else None,
             })
+        print(f"[GET /items] user_id={user_id} → returning {len(items)} items")
         return jsonify({"items": items})
     finally:
         release_conn(conn)
