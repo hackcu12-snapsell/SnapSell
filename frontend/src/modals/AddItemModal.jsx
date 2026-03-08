@@ -1,3 +1,5 @@
+/** @module AddItemModal */
+
 import React, { useRef, useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import Modal from "../common/Modal/Modal";
@@ -10,9 +12,15 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
   const isOpen = useSelector(state => state.modalState[MODAL_ID]);
   const tokenFromStore = useSelector(state => state.userState.loginResult?.token);
   // Fallback to localStorage in case Redux hasn't rehydrated yet
-  const token = tokenFromStore || (() => {
-    try { return JSON.parse(localStorage.getItem("user") || "{}").token; } catch { return null; }
-  })();
+  const token =
+    tokenFromStore ||
+    (() => {
+      try {
+        return JSON.parse(localStorage.getItem("user") || "{}").token;
+      } catch {
+        return null;
+      }
+    })();
 
   const [mode, setMode] = useState("photo");
   // stage: "capture" | "review" | "saving"
@@ -127,7 +135,7 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
         description: data.description || description,
         category: data.category || "",
         brand: data.brand || "",
-        year: data.year || "",
+        year: data.year || ""
       };
       setFields(parsed);
       setCondition(data.condition || "");
@@ -161,7 +169,7 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
       const res = await fetch("/api/save-item", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
-        body,
+        body
       });
       const data = await res.json();
       if (!res.ok) {
@@ -171,12 +179,12 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
       }
       console.log("[AddItemModal] Saved item:", data.item_id, "| image:", data.image_url);
       onAppraisalReady?.({
-        item_id:   data.item_id,
+        item_id: data.item_id,
         image_url: data.image_url,
         preview,
         condition,
-        item:      data.item,
-        appraisal: data.appraisal,
+        item: data.item,
+        appraisal: data.appraisal
       });
       close();
     } catch (err) {
@@ -188,28 +196,33 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
   const setField = key => e => setFields(f => ({ ...f, [key]: e.target.value }));
 
   // ── Footer buttons ──────────────────────────────────────────────────────────
-  const footerButtons = stage === "capture"
-    ? [{
-        text: analyzing ? "Analyzing…" : "Analyze Item",
-        variant: "contained",
-        primary: true,
-        disabled: !capturedFile || analyzing,
-        onClick: handleAnalyze,
-      }]
-    : [{
-        text: stage === "saving" ? "Saving…" : "Save & Appraise",
-        variant: "contained",
-        primary: true,
-        disabled: !fields.name.trim() || stage === "saving",
-        onClick: handleSave,
-      }];
+  const footerButtons =
+    stage === "capture"
+      ? [
+          {
+            text: analyzing ? "Analyzing…" : "Analyze Item",
+            variant: "contained",
+            primary: true,
+            disabled: !capturedFile || analyzing,
+            onClick: handleAnalyze
+          }
+        ]
+      : [
+          {
+            text: stage === "saving" ? "Saving…" : "Save & Appraise",
+            variant: "contained",
+            primary: true,
+            disabled: !fields.name.trim() || stage === "saving",
+            onClick: handleSave
+          }
+        ];
 
   const titleEl = (
     <div style={styles.titleRow}>
-      <span>
-        {stage === "review" ? "Review Item" : "Add Item"}
-      </span>
-      <button style={styles.closeX} onClick={close} aria-label="Close">✕</button>
+      <span>{stage === "review" ? "Review Item" : "Add Item"}</span>
+      <button style={styles.closeX} onClick={close} aria-label="Close">
+        ✕
+      </button>
     </div>
   );
 
@@ -223,12 +236,26 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
       {/* Mode toggle — only visible on capture stage */}
       {stage === "capture" && (
         <div style={styles.toggleTrack}>
-          <div style={{ ...styles.togglePill, left: mode === "photo" ? "4px" : "calc(50% + 0px)" }} />
+          <div
+            style={{ ...styles.togglePill, left: mode === "photo" ? "4px" : "calc(50% + 0px)" }}
+          />
           <button style={styles.toggleBtn} onClick={() => setMode("photo")}>
-            <span style={{ position: "relative", zIndex: 1, color: mode === "photo" ? "#111" : "#aaa" }}>Photo</span>
+            <span
+              style={{ position: "relative", zIndex: 1, color: mode === "photo" ? "#111" : "#aaa" }}
+            >
+              Photo
+            </span>
           </button>
           <button style={styles.toggleBtn} onClick={() => setMode("manual")}>
-            <span style={{ position: "relative", zIndex: 1, color: mode === "manual" ? "#111" : "#aaa" }}>Manual</span>
+            <span
+              style={{
+                position: "relative",
+                zIndex: 1,
+                color: mode === "manual" ? "#111" : "#aaa"
+              }}
+            >
+              Manual
+            </span>
           </button>
         </div>
       )}
@@ -239,7 +266,9 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
           <div style={styles.viewfinder}>
             <video
               ref={videoRef}
-              autoPlay playsInline muted
+              autoPlay
+              playsInline
+              muted
               style={{ ...styles.viewfinderMedia, display: cameraActive ? "block" : "none" }}
             />
             {preview && !cameraActive && (
@@ -252,7 +281,9 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
               <button style={styles.shutterBtn} onClick={capturePhoto} aria-label="Capture" />
             )}
             {preview && !cameraActive && (
-              <button style={styles.retakeBtn} onClick={resetCapture}>Retake</button>
+              <button style={styles.retakeBtn} onClick={resetCapture}>
+                Retake
+              </button>
             )}
           </div>
           <canvas ref={canvasRef} style={{ display: "none" }} />
@@ -261,7 +292,13 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
             <button style={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
               Upload Photo
             </button>
-            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleUpload} />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleUpload}
+            />
           </div>
 
           <label style={styles.fieldLabel}>
@@ -278,7 +315,9 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
           <label style={styles.fieldLabel}>
             Purchase Price ($)
             <input
-              type="number" min="0" step="0.01"
+              type="number"
+              min="0"
+              step="0.01"
               value={purchasePrice}
               onChange={e => setPurchasePrice(e.target.value)}
               placeholder="0.00"
@@ -326,17 +365,32 @@ const AddItemModal = ({ handleClose, onAppraisalReady }) => {
           <div style={styles.twoCol}>
             <label style={styles.fieldLabel}>
               Category
-              <input value={fields.category} onChange={setField("category")} placeholder="e.g. Electronics" style={styles.input} />
+              <input
+                value={fields.category}
+                onChange={setField("category")}
+                placeholder="e.g. Electronics"
+                style={styles.input}
+              />
             </label>
             <label style={styles.fieldLabel}>
               Year
-              <input value={fields.year} onChange={setField("year")} placeholder="e.g. 2019" style={styles.input} />
+              <input
+                value={fields.year}
+                onChange={setField("year")}
+                placeholder="e.g. 2019"
+                style={styles.input}
+              />
             </label>
           </div>
 
           <label style={styles.fieldLabel}>
             Brand
-            <input value={fields.brand} onChange={setField("brand")} placeholder="Brand or manufacturer" style={styles.input} />
+            <input
+              value={fields.brand}
+              onChange={setField("brand")}
+              placeholder="Brand or manufacturer"
+              style={styles.input}
+            />
           </label>
         </>
       )}

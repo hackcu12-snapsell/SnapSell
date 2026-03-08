@@ -1,20 +1,28 @@
-/** @module SnackbarProvider.jsx */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/** @module SnackbarProvider.tsx */
 
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Snackbar, Alert } from "@mui/material";
+import { Snackbar, Alert, type AlertColor } from "@mui/material";
 import { removeSnackbar } from "../../redux/actions/snackbarActions";
 
-const SnackbarProvider = () => {
+interface SnackbarState {
+  open: boolean;
+  message: string;
+  severity: AlertColor;
+  autoHideDuration?: number;
+}
+
+const SnackbarProvider: React.FC = () => {
   const dispatch = useDispatch();
   const {
     open,
     message,
     severity,
     autoHideDuration = 6000
-  } = useSelector(state => state.snackbarState);
+  } = useSelector((state: any) => state.snackbarState) as SnackbarState;
 
-  const handleClose = (event, reason) => {
+  const handleClose = (_event: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === "clickaway") {
       return;
     }
