@@ -4,7 +4,7 @@ export const ADD_LOGIN_AUTHENTICATION = "ADD_LOGIN_AUTHENTICATION";
 export const ADD_USER_PREFERENCES = "ADD_USER_PREFERENCES";
 
 export const defaultState = {
-  loginResult: false,
+  loginResult: {},
   userPreferences: {}
 };
 

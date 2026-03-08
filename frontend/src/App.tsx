@@ -29,7 +29,7 @@ const ProtectedRoute = ({ isLoggedIn, children }: ProtectedRouteProps) => {
 
 export default function App() {
   const dispatch = useAppDispatch();
-  const loginResult = useAppSelector(state => state.userState.loginResult);
+  const loginResult = useAppSelector(state => state.userState?.loginResult?.token);
   const [isLoggedIn, setIsLoggedIn] = useState(Boolean(loginResult));
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
