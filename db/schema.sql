@@ -24,6 +24,7 @@ CREATE TABLE items (
     brand TEXT,
     year INTEGER,
     status TEXT CHECK (status IN ('appraised', 'inventory', 'listed', 'sold')),
+    condition TEXT,
     sale_cost NUMERIC DEFAULT 0,
     ebay_listing_url TEXT,
     posted_date TIMESTAMP,

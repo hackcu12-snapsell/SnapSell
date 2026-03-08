@@ -160,7 +160,7 @@ def get_items():
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 """
-                SELECT i.id, i.name, i.description, i.category, i.brand, i.year, i.status, i.sale_cost,
+                SELECT i.id, i.name, i.description, i.category, i.brand, i.year, i.status, i.condition, i.sale_cost,
                        (SELECT ii.url FROM item_image ii WHERE ii.item_id = i.id LIMIT 1) AS image_url,
                        (SELECT a.mean_value FROM appraisals a WHERE a.item_id = i.id ORDER BY a.date DESC LIMIT 1) AS mean_value,
                        (SELECT COALESCE(json_agg(to_json(lr)), '[]'::json)
@@ -202,6 +202,7 @@ def get_items():
                 "brand": row["brand"],
                 "year": row["year"],
                 "status": row["status"] or "inventory",
+                "condition": row.get("condition"),
                 "sale_cost": sale_cost,
                 "price": sale_cost,
                 "image_url": row["image_url"],
@@ -231,6 +232,7 @@ def analyze_item():
   "name": "short item name",
   "description": "detailed description of the item - focus on details that are relevant to searching for the item on a site like ebay.",
   "condition": "one of: New | Like New | Good | Fair | Poor",
+  "condition": "condition grade or description if relevant (e.g. Excellent, Good, Fair), or null",
   "category": "item category (e.g. Electronics, Clothing, Collectibles, Tools, Furniture, Shoes, etc)",
   "brand": "brand or manufacturer if identifiable, or null",
   "year": "estimated year or era of manufacture if relevant (e.g. '2019', '1980s'), or null",
@@ -428,9 +430,9 @@ def save_item():
     try:
         with conn.cursor() as cur:
             cur.execute(
-                """INSERT INTO items (userid, name, description, category, brand, year, status, sale_cost)
-                   VALUES (%s, %s, %s, %s, %s, %s, 'inventory', %s) RETURNING id""",
-                (user_id, name, description, category, brand, year, purchase_price),
+                """INSERT INTO items (userid, name, description, category, brand, year, status, condition, sale_cost)
+                   VALUES (%s, %s, %s, %s, %s, %s, 'inventory', %s, %s) RETURNING id""",
+                (user_id, name, description, category, brand, year, condition, purchase_price),
             )
             item_id = cur.fetchone()[0]
             cur.execute(

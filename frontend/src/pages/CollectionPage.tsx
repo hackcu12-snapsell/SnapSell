@@ -20,6 +20,7 @@ type Item = {
   imageUrl: string;
   price?: number | null;
   createdAt?: string | null;
+  condition?: string | null;
 };
 
 type SortField = "name" | "price" | "date";
@@ -199,7 +200,8 @@ const CollectionPage = () => {
                 ? raw.created_at
                 : typeof raw.createdAt === "string"
                   ? raw.createdAt
-                  : null
+                  : null,
+            condition: typeof raw.condition === "string" ? raw.condition : null
           };
         });
 
